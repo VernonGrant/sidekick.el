@@ -120,8 +120,7 @@
 					(list "Files [" symbol-str "]:\n") " "))
 		  (command (mapconcat
 					'identity
-					(list "rg -l" file-glob symbol-str "./") " "))
-		  )
+					(list "rg -l" file-glob symbol-str "./") " ")))
 
 	  (sidekick-draw-section-heading heading)
 	  (insert (shell-command-to-string command)))))
@@ -135,7 +134,7 @@
   (when (get-buffer sidekick-buffer-name)
 	(kill-buffer sidekick-buffer-name))
 
-  ;; Create new buffer.
+  ;; Create and setup buffer window.
   (display-buffer-in-side-window
    (get-buffer-create sidekick-buffer-name)
    `(

@@ -56,26 +56,23 @@
   (let ((map (make-sparse-keymap)))
 	(define-key map "q" 'quit-window)
 	;; TODO: Implement movement between headings.
+	;; TODO: Implement preview of files and line numbers.
     map))
 
- ;; '(font-lock-builtin-face ((t (:bold t :foreground "PaleGreen"))))
- ;; '(font-lock-comment-face ((t (:foreground "tomato3"))))
- ;; '(font-lock-constant-face ((t (:foreground "Aquamarine"))))
- ;; '(font-lock-doc-string-face ((t (:foreground "LightSalmon3"))))
- ;; '(font-lock-function-name-face ((t (:foreground "SteelBlue1"))))
- ;; '(font-lock-keyword-face ((t (:foreground "cyan1"))))
- ;; '(font-lock-reference-face ((t (:foreground "LightSalmon2"))))
- ;; '(font-lock-string-face ((t (:foreground "LightSalmon3"))))
- ;; '(font-lock-type-face ((t (:foreground "PaleGreen3"))))
- ;; '(font-lock-variable-name-face ((t (:foreground "khaki1"))))
- ;; '(font-lock-warning-face ((t (:bold t :foreground "IndianRed"))))
- ;; '(font-lock-preprocessor-face ((t (:foreground "SkyBlue3"))))
-
+;; TODO: Implement custom faces.
 (setq sidekick-highlights
       '(
+		;; Heading sections.
 		("^-\\{2\\}|\s?" . 'font-lock-comment-face)
 		("^-\\{2\\}|\s.*\\(|-+\\)" (1 font-lock-comment-face))
-		("^-\\{2\\}|\s\\(.*\\)\s|-+" (1 font-lock-keyword-face))))
+		("^-\\{2\\}|\s\\(.*\\)\s|-+" (1 font-lock-function-name-face))
+
+		;; File path.
+		("^./.*" . 'xref-file-header)
+
+		;; Line numbers.
+		("^[0-9]+:" . 'xref-line-number)
+		))
 
 (defun sidekick--construct()
   ""
@@ -89,7 +86,6 @@
   (setq buffer-read-only nil)
   (kill-all-local-variables))
 
-
 (define-derived-mode sidekick-mode fundamental-mode "Sidekick"
   ""
   ;; TODO: Add syntax highlighting.
@@ -102,12 +98,14 @@
 
 (defun sidekick--get-project-root-path()
   "Get the root path to the current project."
+  ;; TODO: Document me:
+  ;; TODO: Decide the precedence of project root directory indicators.
   ;; TODO: Report when some project root can not be found.
   (let ((dir default-directory))
 	(or
-	  (locate-dominating-file dir ".git")
-	  (locate-dominating-file dir ".sidekick")
-	  (locate-dominating-file dir ".projectile"))))
+	 (locate-dominating-file dir ".sidekick")
+	 (locate-dominating-file dir ".projectile")
+	 (locate-dominating-file dir ".git"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick User Interface ;;
@@ -127,10 +125,14 @@
 ;; Sidekick Symbol References ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sidekick--update-header(symbol symbol-str buffer-fn project-dir)
+;; TODO: improve window properties.
+;; TODO: setup symbol highlighting in buffer.
+;; TODO: implement syntax highlighting.
+
+;; TODO: setup proper panel footer.
+(defun sidekick--update-footer(symbol symbol-str buffer-fn project-dir)
   ""
-  (insert "")
-  )
+  (insert "Version: v0.0.1\n\n"))
 
 (defun sidekick--update-notice(symbol symbol-str buffer-fn project-dir)
   ""
@@ -142,30 +144,26 @@
 (defun sidekick--update-symbol-occur(symbol symbol-str buffer-fn project-dir)
   ""
   (cd project-dir)
-  (sidekick-draw-section-heading "Current Buffer")
+  (sidekick-draw-section-heading "In Buffer")
   (let ((file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
 	(let ((command (mapconcat
 					'identity
 					(list "rg -n --no-heading --no-filename --trim" (concat "'" symbol-str "'") buffer-fn) " ")))
 	  (insert (shell-command-to-string command))
-	  (insert "\n\n")))
-  )
+	  (insert "\n"))))
 
 (defun sidekick--update-symbol-references(symbol symbol-str buffer-fn project-dir)
   ""
   (cd project-dir)
-  (sidekick-draw-section-heading "Project")
+  (sidekick-draw-section-heading "In Project")
   (let ((file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
 	(let ((command (mapconcat
 					'identity
 					(list "rg -n --trim --heading" file-glob (concat "'" symbol-str "'") "./") " ")))
 	  (insert (shell-command-to-string command))
-	  (insert "\n\n")
-	  ))
+	  (insert "\n")
+	  )))
 
-  )
-
-;; TODO: Files.
 (defun sidekick--update-symbol-files(symbol symbol-str buffer-fn project-dir)
   "Find all files containing the symbol."
   ;; Count the number of files.
@@ -180,7 +178,7 @@
 					'identity
 					(list "rg -l" file-glob (concat "'" symbol-str "'") "./") " ")))
 	  (insert (shell-command-to-string command))
-	  (insert "\n\n"))))
+	  (insert "\n"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
@@ -201,7 +199,7 @@
    `(
 	 (side . right)
 	 (slot . 0)
-	 (window-width . 0.2)
+	 (window-width . 0.25)
 	 ;; TODO: optimize the display of the sidekick window.
 	 ;; (window-parameters . (
 	 ;; 					   ;;(no-other-window . t)
@@ -213,12 +211,13 @@
 	(progn
 	  (sidekick--deconstruct)
 	  (erase-buffer)
-	  (sidekick--update-header symbol symbol-str buffer-fn project-dir)
 	  (sidekick--update-symbol-occur symbol symbol-str buffer-fn project-dir)
 	  (sidekick--update-symbol-references symbol symbol-str buffer-fn project-dir)
 	  (sidekick--update-symbol-files symbol symbol-str buffer-fn project-dir)
+	  (sidekick--update-footer symbol symbol-str buffer-fn project-dir)
 	  (goto-char 0)
-	  (sidekick-mode)))
+	  (sidekick-mode)
+	  (highlight-regexp symbol 'highlight)))
 
   ;; TODO: implement focus option.
   (when sidekick-auto-focus-post-update
@@ -268,13 +267,13 @@
 (defun sidekick--testing()
   ""
   (interactive)
+  (highlight-regexp "In Buffer" 'highlight)
   (print (thing-at-point 'symbol))
   (print (or (buffer-file-name) (buffer-name)))
   (print (sidekick--get-project-root-path))
   (print (not sidekick-updating))
   (print (> (string-width (thing-at-point 'symbol)) sidekick-min-symbol-length))
-  (print (member (symbol-name major-mode) sidekick-supported-modes))
-  )
+  (print (member (symbol-name major-mode) sidekick-supported-modes)))
 
 (global-set-key (kbd "C-c t") 'sidekick--testing)
 

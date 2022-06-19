@@ -33,13 +33,13 @@
 
 (require 'timer)
 
-(defvar sidekick-update-timeout 3 "*The amount of seconds before sidekick should update.")
-
 (defvar sidekick-mode-hook nil "*List of functions to call when entering Sidekick mode.")
 
-(defvar sidekick-previous-symbol nil "The previously checked symbol.")
+(defvar sidekick-updating nil "non-nil when sidekick is updating.")
 
 (defvar sidekick-min-symbol-length 2 "The minimum allowed symbol length.")
+
+(defvar sidekick-focus-post-update t)
 
 (defvar sidekick-supported-modes (list
 								  "php-mode"
@@ -71,6 +71,7 @@
 
 (define-derived-mode sidekick-mode fundamental-mode "Sidekick"
   ""
+  ;; TODO: Add syntax highlighting.
   ;; TODO: Setup mode hooks.
   (sidekick--construct))
 
@@ -93,43 +94,60 @@
 
 (defun sidekick-draw-section-heading(heading)
   "Draws a new heading separator inside the active buffer."
-  (insert heading)
+  (insert (concat "--| " heading " |"))
   (let ((iterator 0))
-	(while (< iterator (window-width))
+	(while (< iterator (- (window-width) (string-width heading)))
 	  (progn
 		(setq iterator (+ iterator 1))
 		(insert "-"))))
-  (insert "\n"))
+  (insert "\n\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Symbol References ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sidekick--handle-references(symbol-str buffer-fn)
+;; TODO: add last updated time and symbol heading.
+(defun sidekick--update-notice(symbol symbol-str buffer-fn project-dir)
+  (sidekick-draw-section-heading (mapconcat 'identity (list  "Updated" (format-time-string "%H:%M:%S") symbol) " - "))
+  )
+
+;; TODO: Current buffer matches (Occur).
+(defun sidekick--update-symbol-occur(symbol symbol-str buffer-fn project-dir)
+  ;; Change the directory to the project root before running grep.
+  (cd project-dir)
+  (sidekick-draw-section-heading "Occur"))
+
+;; TODO: Project wide references.
+(defun sidekick--update-symbol-references(symbol symbol-str buffer-fn project-dir)
+  ;; Change the directory to the project root before running grep.
+  (cd project-dir)
+  (sidekick-draw-section-heading "References"))
+
+;; TODO: Files.
+(defun sidekick--update-symbol-files(symbol symbol-str buffer-fn project-dir)
   "Find all files containing the symbol."
   ;; Count the number of files.
-  (let ((project-dir (sidekick--get-project-root-path))
-		(file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
+  (let ((file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
 
 	;; Change the directory to the project root before running grep.
 	(cd project-dir)
 
 	;; Run grep and output results into sidekick buffer.
-	(let ((heading (mapconcat
+	(let ((command (mapconcat
 					'identity
-					(list "Files [" symbol-str "]:\n") " "))
-		  (command (mapconcat
-					'identity
-					(list "rg -l" file-glob symbol-str "./") " ")))
-
-	  (sidekick-draw-section-heading heading)
+					(list "rg -l" file-glob (concat "'" symbol-str "'") "./") " ")))
+	  (sidekick-draw-section-heading "Files")
 	  (insert (shell-command-to-string command)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sidekick--update(symbol-str buffer-fn)
+(defun sidekick--update(symbol symbol-str buffer-fn project-dir)
+  ""
+  ;; Pause future update calls.
+  (setq sidekick-updating t)
+
   ;; Destroy buffer if it already exists.
   (when (get-buffer sidekick-buffer-name)
 	(kill-buffer sidekick-buffer-name))
@@ -141,43 +159,81 @@
 	 (side . right)
 	 (slot . 0)
 	 (window-width . 0.2)
+	 ;; TODO: optimize the display of the sidekick window.
 	 ;; (window-parameters . (
 	 ;; 					   ;;(no-other-window . t)
 	 ;; 					   (no-delete-other-windows . t)))
 	 ))
 
-  ;; Render sidekick buffer.
+  ;; Perform sidekick buffer operations.
   (with-current-buffer sidekick-buffer-name
 	(progn
 	  (sidekick--deconstruct)
 	  (erase-buffer)
-	  (sidekick--handle-references symbol-str buffer-fn)
+	  (sidekick--update-notice symbol symbol-str buffer-fn project-dir)
+	  (sidekick--update-symbol-occur symbol symbol-str buffer-fn project-dir)
+	  (sidekick--update-symbol-references symbol symbol-str buffer-fn project-dir)
+	  (sidekick--update-symbol-files symbol symbol-str buffer-fn project-dir)
 	  (goto-char 0)
-	  (sidekick-mode))))
+	  (sidekick-mode)))
+
+  ;; TODO: implement focus option.
+  (when sidekick-focus-post-update
+	(switch-to-buffer-other-window sidekick-buffer-name))
+
+  ;; Enable future update calls.
+  (setq sidekick-updating nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Triggers ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sidekick--should-update(symbol buffer-fn)
+(defun sidekick--should-update(symbol buffer-fn project-dir)
   "Determines whether or not the sidekick buffer should be updated."
   ;; Note: The symbol at this stage, might have text properties.
+  ;; TODO: What if the buffer has no file or extension.
   (and
    symbol
    buffer-fn
+   project-dir
+   (not sidekick-updating)
    (> (string-width symbol) sidekick-min-symbol-length)
-   (member (symbol-name major-mode) sidekick-supported-modes)
-   (not (string= sidekick-previous-symbol symbol))))
+   (member (symbol-name major-mode) sidekick-supported-modes)))
 
 (defun sidekick--trigger-update()
   "Gets called every 'sidekick-update-timeout' seconds."
   (let ((symbol (thing-at-point 'symbol))
-		(buffer-fn (buffer-file-name)))
-	(when (sidekick--should-update symbol buffer-fn)
-	  (setq sidekick-previous-symbol (substring-no-properties symbol))
-	  (sidekick--update (substring-no-properties symbol) buffer-fn))))
+		;; TODO: What if the buffer has no file or extension.
+		(buffer-fn (or (buffer-file-name) (buffer-name)))
+		(project-dir (sidekick--get-project-root-path)))
+	(when (sidekick--should-update symbol buffer-fn project-dir)
+	  (sidekick--update
+	   symbol
+	   (substring-no-properties symbol)
+	   buffer-fn
+	   project-dir))))
 
-(run-with-timer 0 sidekick-update-timeout 'sidekick--trigger-update)
+(defun sidekick-at-point()
+  "Trigger sidekick panel update."
+  (interactive)
+  (sidekick--trigger-update))
+
+;;;;;;;;;;;;;
+;; Testing ;;
+;;;;;;;;;;;;;
+
+(defun sidekick--testing()
+  ""
+  (interactive)
+  (print (thing-at-point 'symbol))
+  (print (or (buffer-file-name) (buffer-name)))
+  (print (sidekick--get-project-root-path))
+  (print (not sidekick-updating))
+  (print (> (string-width (thing-at-point 'symbol)) sidekick-min-symbol-length))
+  (print (member (symbol-name major-mode) sidekick-supported-modes))
+  )
+
+(global-set-key (kbd "C-c t") 'sidekick--testing)
 
 (provide 'sidekick)
 

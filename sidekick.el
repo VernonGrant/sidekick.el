@@ -39,7 +39,7 @@
 
 (defvar sidekick-min-symbol-length 2 "The minimum allowed symbol length.")
 
-(defvar sidekick-focus-post-update t)
+(defvar sidekick-auto-focus-post-update nil)
 
 (defvar sidekick-supported-modes (list
 								  "php-mode"
@@ -58,9 +58,29 @@
 	;; TODO: Implement movement between headings.
     map))
 
+ ;; '(font-lock-builtin-face ((t (:bold t :foreground "PaleGreen"))))
+ ;; '(font-lock-comment-face ((t (:foreground "tomato3"))))
+ ;; '(font-lock-constant-face ((t (:foreground "Aquamarine"))))
+ ;; '(font-lock-doc-string-face ((t (:foreground "LightSalmon3"))))
+ ;; '(font-lock-function-name-face ((t (:foreground "SteelBlue1"))))
+ ;; '(font-lock-keyword-face ((t (:foreground "cyan1"))))
+ ;; '(font-lock-reference-face ((t (:foreground "LightSalmon2"))))
+ ;; '(font-lock-string-face ((t (:foreground "LightSalmon3"))))
+ ;; '(font-lock-type-face ((t (:foreground "PaleGreen3"))))
+ ;; '(font-lock-variable-name-face ((t (:foreground "khaki1"))))
+ ;; '(font-lock-warning-face ((t (:bold t :foreground "IndianRed"))))
+ ;; '(font-lock-preprocessor-face ((t (:foreground "SkyBlue3"))))
+
+(setq sidekick-highlights
+      '(
+		("^-\\{2\\}|\s?" . 'font-lock-comment-face)
+		("^-\\{2\\}|\s.*\\(|-+\\)" (1 font-lock-comment-face))
+		("^-\\{2\\}|\s\\(.*\\)\s|-+" (1 font-lock-keyword-face))))
+
 (defun sidekick--construct()
   ""
   (setq buffer-read-only t)
+  (setq font-lock-defaults '(sidekick-highlights))
   (use-local-map sidekick-mode-map)
   (run-hooks 'sidekick-mode-hook))
 
@@ -68,6 +88,7 @@
   ""
   (setq buffer-read-only nil)
   (kill-all-local-variables))
+
 
 (define-derived-mode sidekick-mode fundamental-mode "Sidekick"
   ""
@@ -106,22 +127,43 @@
 ;; Sidekick Symbol References ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: add last updated time and symbol heading.
-(defun sidekick--update-notice(symbol symbol-str buffer-fn project-dir)
-  (sidekick-draw-section-heading (mapconcat 'identity (list  "Updated" (format-time-string "%H:%M:%S") symbol) " - "))
+(defun sidekick--update-header(symbol symbol-str buffer-fn project-dir)
+  ""
+  (insert "")
   )
 
-;; TODO: Current buffer matches (Occur).
-(defun sidekick--update-symbol-occur(symbol symbol-str buffer-fn project-dir)
-  ;; Change the directory to the project root before running grep.
-  (cd project-dir)
-  (sidekick-draw-section-heading "Occur"))
+(defun sidekick--update-notice(symbol symbol-str buffer-fn project-dir)
+  ""
+  (sidekick-draw-section-heading
+   (mapconcat
+	'identity
+	(list  "Updated" (format-time-string "%H:%M:%S") symbol) " - ")))
 
-;; TODO: Project wide references.
-(defun sidekick--update-symbol-references(symbol symbol-str buffer-fn project-dir)
-  ;; Change the directory to the project root before running grep.
+(defun sidekick--update-symbol-occur(symbol symbol-str buffer-fn project-dir)
+  ""
   (cd project-dir)
-  (sidekick-draw-section-heading "References"))
+  (sidekick-draw-section-heading "Current Buffer")
+  (let ((file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
+	(let ((command (mapconcat
+					'identity
+					(list "rg -n --no-heading --no-filename --trim" (concat "'" symbol-str "'") buffer-fn) " ")))
+	  (insert (shell-command-to-string command))
+	  (insert "\n\n")))
+  )
+
+(defun sidekick--update-symbol-references(symbol symbol-str buffer-fn project-dir)
+  ""
+  (cd project-dir)
+  (sidekick-draw-section-heading "Project")
+  (let ((file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
+	(let ((command (mapconcat
+					'identity
+					(list "rg -n --trim --heading" file-glob (concat "'" symbol-str "'") "./") " ")))
+	  (insert (shell-command-to-string command))
+	  (insert "\n\n")
+	  ))
+
+  )
 
 ;; TODO: Files.
 (defun sidekick--update-symbol-files(symbol symbol-str buffer-fn project-dir)
@@ -131,13 +173,14 @@
 
 	;; Change the directory to the project root before running grep.
 	(cd project-dir)
+	(sidekick-draw-section-heading "Files")
 
 	;; Run grep and output results into sidekick buffer.
 	(let ((command (mapconcat
 					'identity
 					(list "rg -l" file-glob (concat "'" symbol-str "'") "./") " ")))
-	  (sidekick-draw-section-heading "Files")
-	  (insert (shell-command-to-string command)))))
+	  (insert (shell-command-to-string command))
+	  (insert "\n\n"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
@@ -170,7 +213,7 @@
 	(progn
 	  (sidekick--deconstruct)
 	  (erase-buffer)
-	  (sidekick--update-notice symbol symbol-str buffer-fn project-dir)
+	  (sidekick--update-header symbol symbol-str buffer-fn project-dir)
 	  (sidekick--update-symbol-occur symbol symbol-str buffer-fn project-dir)
 	  (sidekick--update-symbol-references symbol symbol-str buffer-fn project-dir)
 	  (sidekick--update-symbol-files symbol symbol-str buffer-fn project-dir)
@@ -178,7 +221,7 @@
 	  (sidekick-mode)))
 
   ;; TODO: implement focus option.
-  (when sidekick-focus-post-update
+  (when sidekick-auto-focus-post-update
 	(switch-to-buffer-other-window sidekick-buffer-name))
 
   ;; Enable future update calls.

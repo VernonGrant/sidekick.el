@@ -236,8 +236,9 @@
         (sidekick-draw-text-centerd logo-str))
     (sidekick-draw-separator))
 
-;; TODO: Combine these methods into one external function.
-;; TODO: for C and C++ search header files to. Have mode / file extension
+;; TODO: Add option for case insensitive searches.
+;; TODO: Combine these methods into one external function?
+;; TODO: for C and C++ search header files to. Have mode / file extension.
 ;; associations and generate a glob pattern for each.
 (defun sidekick--update-symbol-occur(symbol symbol-str buffer-fn project-dir mode-name)
     "Shows all occurrences of symbol in the current active buffer."
@@ -310,10 +311,14 @@
         (progn
             (sidekick--deconstruct)
             (erase-buffer)
-            (sidekick--update-symbol-occur symbol symbol-str buffer-fn project-dir mode-name)
-            (sidekick--update-symbol-references symbol symbol-str buffer-fn project-dir mode-name)
-            (sidekick--update-symbol-files symbol symbol-str buffer-fn project-dir mode-name)
-            (sidekick--update-footer symbol symbol-str buffer-fn project-dir mode-name)
+            (sidekick--update-symbol-occur symbol symbol-str
+                buffer-fn project-dir mode-name)
+            (sidekick--update-symbol-references symbol symbol-str
+                buffer-fn project-dir mode-name)
+            (sidekick--update-symbol-files symbol symbol-str
+                buffer-fn project-dir mode-name)
+            (sidekick--update-footer symbol symbol-str
+                buffer-fn project-dir mode-name)
             (goto-char 0)
             (sidekick-mode)
             (highlight-regexp symbol 'highlight)))
@@ -339,8 +344,7 @@
         project-dir
         (not sidekick-updating)
         (> (string-width symbol) sidekick-min-symbol-length)
-        (member mode-name (sidekick--extract-supported-modes))
-        ))
+        (member mode-name (sidekick--extract-supported-modes))))
 
 (defun sidekick--trigger-update()
     "Gets called every 'sidekick-update-timeout' seconds."
@@ -350,9 +354,7 @@
              (project-dir (sidekick--get-project-root-path))
              (mode-name (symbol-name major-mode)))
         (when (sidekick--should-update symbol buffer-fn project-dir mode-name)
-            (sidekick--update
-                symbol
-                (substring-no-properties symbol)
+            (sidekick--update symbol (substring-no-properties symbol)
                 buffer-fn
                 project-dir
                 mode-name))))

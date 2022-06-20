@@ -55,6 +55,9 @@
 (defvar sidekick-mode-map
   (let ((map (make-sparse-keymap)))
 	(define-key map "q" 'quit-window)
+	(define-key map (kbd "M-n") 'sidekick-jump-forward)
+	(define-key map (kbd "M-p") 'sidekick-jump-backward)
+	;; TODO: Implement refresh.
 	;; TODO: Implement movement between headings.
 	;; TODO: Implement preview of files and line numbers.
     map))
@@ -62,17 +65,23 @@
 ;; TODO: Implement custom faces.
 (setq sidekick-highlights
       '(
+		;; TODO: test regexps.
 		;; Heading sections.
 		("^-\\{2\\}|\s?" . 'font-lock-comment-face)
 		("^-\\{2\\}|\s.*\\(|-+\\)" (1 font-lock-comment-face))
 		("^-\\{2\\}|\s\\(.*\\)\s|-+" (1 font-lock-function-name-face))
 
+		;; Footer sections.
+		("^-\\{3\\}+" . font-lock-comment-face)
+		("^[-\s]\\{2\\}+\s+[-]+" . font-lock-comment-face)
+		("^[*\s]\\{2\\}+\s+[*]+" . font-lock-comment-face)
+		("^[*\s]+[\s]+\\([a-zA-Z]+[:]\s[0-9\\.]+\\)" (1 font-lock-keyword-face))
+
 		;; File path.
-		("^./.*" . 'xref-file-header)
+		("^\\./.*" . 'xref-file-header)
 
 		;; Line numbers.
-		("^[0-9]+:" . 'xref-line-number)
-		))
+		("^[0-9]+:" . 'xref-line-number)))
 
 (defun sidekick--construct()
   ""
@@ -90,11 +99,23 @@
   ""
   ;; TODO: Add syntax highlighting.
   ;; TODO: Setup mode hooks.
-  (sidekick--construct))
+(sidekick--construct))
 
-;;;;;;;;;;;;;;;;;;;;;;
-;; Sidekick Helpers ;;
-;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;
+;; Sidekick Bindings ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun sidekick-jump-backward()
+  (interactive)
+	(re-search-backward "^[.-]+[|/]" nil t))
+
+(defun sidekick-jump-forward()
+  (interactive)
+	(re-search-forward "^[.-]+[|/]" nil t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sidekick Utilities ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun sidekick--get-project-root-path()
   "Get the root path to the current project."
@@ -107,42 +128,95 @@
 	 (locate-dominating-file dir ".projectile")
 	 (locate-dominating-file dir ".git"))))
 
+;; TODO: implement this.
+(defun sidekick--get-rg-path()
+  "Get the path of rg")
+
+(defun sidekick--get-window-width()
+  "Get the Sidekick window with in columns."
+  (let ((sidekick-win (nth 0 (get-buffer-window-list sidekick-buffer-name))))
+	(if sidekick-win
+		(window-width sidekick-win) (+ 80))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick User Interface ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun sidekick-draw-section-heading(heading)
   "Draws a new heading separator inside the active buffer."
-  (insert (concat "--| " heading " |"))
-  (let ((iterator 0))
-	(while (< iterator (- (window-width) (string-width heading)))
+  (let ((iterator 0)
+		(heading-fnl (concat "--| " heading " |")))
+	(insert heading-fnl)
+	(while (< iterator (- (sidekick--get-window-width)
+						  (string-width heading-fnl)))
 	  (progn
 		(setq iterator (+ iterator 1))
 		(insert "-"))))
   (insert "\n\n"))
+
+(defun sidekick-draw-separator()
+  "Draws a new heading separator inside the active buffer."
+  (let ((iterator 0))
+	(while (< iterator (sidekick--get-window-width))
+	  (progn
+		(setq iterator (+ iterator 1))
+		(insert "-"))))
+  (insert "\n"))
+
+;; TODO: implement tests.
+(defun sidekick-draw-text-centerd(text)
+  "Center a string inside the sidekick window."
+  (let ((text-lns (split-string text "\n"))
+		(text-ln-max 0)
+		(iterator 0))
+
+	;; Find the longest line.
+	(while (< iterator (length text-lns))
+	  (when (> (string-width (nth iterator text-lns)) text-ln-max)
+		(setq text-ln-max (string-width (nth iterator text-lns))))
+	  (setq iterator (+ iterator 1)))
+
+	;; Reset iterator.
+	(setq iterator 0)
+
+	;; Add padding  lines and print.
+	(let ((padding (- (sidekick--get-window-width) text-ln-max))
+		  (padding-str ""))
+
+	  ;; Generate padding string.
+	  (dotimes (number (/ padding 2))
+		(setq padding-str (concat padding-str " ")))
+
+	  (while (< iterator (length text-lns))
+		(insert (concat padding-str (nth iterator text-lns) "\n"))
+		;; (when (not (= (+ iterator 1) (length text-lns)))
+		  ;; (insert "\n"))
+		(setq iterator (+ iterator 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Symbol References ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: improve window properties.
-;; TODO: setup symbol highlighting in buffer.
-;; TODO: implement syntax highlighting.
-
-;; TODO: setup proper panel footer.
 (defun sidekick--update-footer(symbol symbol-str buffer-fn project-dir)
-  ""
-  (insert "Version: v0.0.1\n\n"))
+  "Draws the logo and version number at the bottom of the Sidekick buffer."
+  (sidekick-draw-separator)
+  (let ((logo-str (concat
+				   "------------ ----    ----\n"
+				   "************ ****   ****\n"
+				   "----         ----  ----\n"
+				   "************ *********    Version: 0.0.1\n"
+				   "------------ ---------    --------------\n"
+				   "       ***** ****  ****\n"
+				   "------------ ----   ----\n"
+				   "************ ****    ****")))
+	(sidekick-draw-text-centerd logo-str))
+  (sidekick-draw-separator))
 
-(defun sidekick--update-notice(symbol symbol-str buffer-fn project-dir)
-  ""
-  (sidekick-draw-section-heading
-   (mapconcat
-	'identity
-	(list  "Updated" (format-time-string "%H:%M:%S") symbol) " - ")))
-
+;; TODO: for C and C++ search header files to. Have mode / file extension
+;; associations and generate a glob pattern for each.
 (defun sidekick--update-symbol-occur(symbol symbol-str buffer-fn project-dir)
-  ""
+  "Shows all occurrences of symbol in the current active buffer."
   (cd project-dir)
   (sidekick-draw-section-heading "In Buffer")
   (let ((file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
@@ -153,7 +227,7 @@
 	  (insert "\n"))))
 
 (defun sidekick--update-symbol-references(symbol symbol-str buffer-fn project-dir)
-  ""
+  "Shows all references to a symbol inside a project directory."
   (cd project-dir)
   (sidekick-draw-section-heading "In Project")
   (let ((file-glob (concat "--glob=\*" (file-name-extension buffer-fn t))))
@@ -161,8 +235,7 @@
 					'identity
 					(list "rg -n --trim --heading" file-glob (concat "'" symbol-str "'") "./") " ")))
 	  (insert (shell-command-to-string command))
-	  (insert "\n")
-	  )))
+	  (insert "\n"))))
 
 (defun sidekick--update-symbol-files(symbol symbol-str buffer-fn project-dir)
   "Find all files containing the symbol."
@@ -201,9 +274,11 @@
 	 (slot . 0)
 	 (window-width . 0.25)
 	 ;; TODO: optimize the display of the sidekick window.
-	 ;; (window-parameters . (
-	 ;; 					   ;;(no-other-window . t)
-	 ;; 					   (no-delete-other-windows . t)))
+	 ;; SEE: https://www.gnu.org/software/emacs/manual/html_node/elisp/Window-Parameters.html
+	 (window-parameters . (
+						   ;;(no-other-window . t)
+						   ;; (mode-line-format . "")
+						   (no-delete-other-windows . t)))
 	 ))
 
   ;; Perform sidekick buffer operations.
@@ -265,15 +340,20 @@
 ;;;;;;;;;;;;;
 
 (defun sidekick--testing()
-  ""
   (interactive)
-  (highlight-regexp "In Buffer" 'highlight)
-  (print (thing-at-point 'symbol))
-  (print (or (buffer-file-name) (buffer-name)))
-  (print (sidekick--get-project-root-path))
-  (print (not sidekick-updating))
-  (print (> (string-width (thing-at-point 'symbol)) sidekick-min-symbol-length))
-  (print (member (symbol-name major-mode) sidekick-supported-modes)))
+  ;; (isearch-backward-regexp &optional NOT-REGEXP NO-RECURSIVE-EDIT)
+
+
+  ;; (print (sidekick--get-window-width))
+  ;; (print (window-width))
+  ;; (highlight-regexp "In Buffer" 'highlight)
+  ;; (print (thing-at-point 'symbol))
+  ;; (print (or (buffer-file-name) (buffer-name)))
+  ;; (print (sidekick--get-project-root-path))
+  ;; (print (not sidekick-updating))
+  ;; (print (> (string-width (thing-at-point 'symbol)) sidekick-min-symbol-length))
+  ;; (print (member (symbol-name major-mode) sidekick-supported-modes))
+  )
 
 (global-set-key (kbd "C-c t") 'sidekick--testing)
 

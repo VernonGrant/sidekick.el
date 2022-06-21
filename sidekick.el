@@ -3,7 +3,7 @@
 ;; Copyright (C) 2022 by Vernon Grant.
 
 ;; Author: Vernon Grant <vernon@ruppell.io>
-;; Version: 0.0.0
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "25"))
 ;; Keywords: extensions, lisp
 ;; Homepage: https://github.com/VernonGrant/sidekick
@@ -23,9 +23,22 @@
 
 ;;; Commentary:
 
-;; A coding assistance panel.
+;; Sidekick is a Emacs extension that's aim is to provide useful information about
+;; a symbol inside a single panel.
 
 ;;; Code:
+
+;; TODO: Implement output with limit.
+;; TODO: improve window properties.
+;; TODO: Buffers must have a file association.
+;; TODO: Add option to ask for custom string input.
+;; TODO: Add option for case insensitive searches.
+;; TODO: Add all default supported modes.
+;; TODO: test regexps.
+;; TODO: Implement custom faces.
+;; TODO: Keymap, implement refresh.
+;; TODO: Keymap, implement movement between headings.
+;; TODO: Keymap, implement preview of files and line numbers.
 
 ;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Mode ;;
@@ -37,33 +50,40 @@
 
 (defvar sidekick-min-symbol-length 2 "The minimum allowed symbol length.")
 
-(defvar sidekick-auto-focus-post-update nil)
+(defvar sidekick-auto-focus-post-update t)
 
-;; TODO: Add all default supported modes.
 (defvar sidekick-mode-file-associations `(
+                                             ;; Leaving globs empty, make
+                                             ;; Sidekick use the current buffers
+                                             ;; extension.
+                                             ("cperl-mode"      . "*.{pl,PL}")
+                                             ("python-mode"     . "*.py")
                                              ("php-mode"        . "*.{php,phtml,twig}")
                                              ("js-mode"         . "*.{js,es,es6}")
+                                             ("typescript-mode" . "*.ts")
+                                             ("java-mode"       . "*.java")
+                                             ("json-mode"       . "*.json")
+                                             ("yaml-mode"       . "*.yml")
+                                             ("xml-mode"        . "*.xml")
                                              ("c-mode"          . "*.{c,cc,h,hh}")
                                              ("c++-mode"        . "*.{cpp,h,hh}")
                                              ("css-mode"        . "*.{css,sass,scss}")
-                                             ("web-mode"        . "*.{html}")
-                                             ("markdown-mode"   . "*.{md}")
+                                             ("web-mode"        . "")
+                                             ("markdown-mode"   . "*.md")
                                              ("emacs-lisp-mode" . "*.{el,emacs}")))
 
 (defconst sidekick-buffer-name "*sidekick*")
 
+(defvar sidekick-activated-in-buffer-fn nil "Only used for Sidekick key bindings.")
+
 (defvar sidekick-mode-map
     (let ((map (make-sparse-keymap)))
         (define-key map "q" 'quit-window)
-        (define-key map (kbd "M-n") 'sidekick-jump-forward)
-        (define-key map (kbd "M-p") 'sidekick-jump-backward)
-        ;; TODO: Implement refresh.
-        ;; TODO: Implement movement between headings.
-        ;; TODO: Implement preview of files and line numbers.
+        (define-key map "o" 'sidekick-preview-other-window)
+;;        (define-key map (kbd "M-n") 'sidekick-jump-forward)
+;;        (define-key map (kbd "M-p") 'sidekick-jump-backward)
         map))
 
-;; TODO: test regexps.
-;; TODO: Implement custom faces.
 (setq sidekick-highlights
     '(
          ;; Heading sections.
@@ -83,54 +103,79 @@
          ;; Line numbers.
          ("^[0-9]+:" . 'xref-line-number)))
 
-(defun sidekick--construct()
-    ""
-    (setq buffer-read-only t)
-    (setq font-lock-defaults '(sidekick-highlights))
-    (display-line-numbers-mode 0)
-    (use-local-map sidekick-mode-map)
-    (run-hooks 'sidekick-mode-hook))
-
 (defun sidekick--deconstruct()
-    ""
+    "Clears Sidekick mode related variables."
     (setq buffer-read-only nil)
     (kill-all-local-variables))
 
 (define-derived-mode sidekick-mode fundamental-mode "Sidekick"
-    ""
+    "Enables sidekick mode. Only used inside the auto generated Sidekick panel."
     ;; TODO: Setup mode hooks.
-    (sidekick--construct))
+    (progn
+        (setq buffer-read-only t)
+        (setq font-lock-defaults '(sidekick-highlights))
+        (display-line-numbers-mode 0)
+        (use-local-map sidekick-mode-map)
+        (run-hooks 'sidekick-mode-hook)))
 
-;;;;;;;;;;;;;;;;;;;;;;;
-;; Sidekick Bindings ;;
-;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sidekick Keymap Interactions ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sidekick-jump-backward()
+(defun sidekick-preview-other-window()
     (interactive)
-    (re-search-backward "^[.-]+[|/]" nil t))
+    (when (string= (symbol-name major-mode) "sidekick-mode")
+        (save-excursion
+            ;; Find out if it has a file association.
+            ;; If true;
+            ;; open file center that line.
+            ;; go back to sidekick and move cursor down to next match.
+            (beginning-of-line)
+            (print sidekick-activated-in-buffer-fn)
+            (print (string (char-after)))
+            (print (thing-at-point 'symbol))
 
-(defun sidekick-jump-forward()
-    (interactive)
-    (re-search-forward "^[.-]+[|/]" nil t))
+            ;;(print (thing-at-point 'line))
+         )
+        (print "Ready to go")))
+
+;; (defun sidekick-jump-backward()
+;;     (interactive)
+;;     (when (string= (symbol-name major-mode) "sidekick-mode")
+;;         (print "Ready to go")
+;;         (re-search-backward "^[.-]+[|/]" nil t))
+;;     )
+
+;; (defun sidekick-jump-forward()
+;;     (interactive)
+;;     (when (string= (symbol-name major-mode) "sidekick-mode")
+;;         (print "Ready to go")
+;;         (re-search-forward "^[.-]+[|/]" nil t))
+;;     )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Utilities ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun sidekick--get-rg-executable-path()
+    "Get the Ripgrep (rg) executable path."
+    (let ((rg-exe (executable-find "rg")))
+        (if (not rg-exe)
+            (progn
+                (error "Sidekick: Ripgrep (rg) executable could not be found.") nil)
+            rg-exe)))
+
 (defun sidekick--get-project-root-path()
     "Get the root path to the current project."
-    ;; TODO: Document me:
-    ;; TODO: Decide the precedence of project root directory indicators.
-    ;; TODO: Report when some project root can not be found.
     (let ((dir default-directory))
-        (or
-            (locate-dominating-file dir ".sidekick")
-            (locate-dominating-file dir ".projectile")
-            (locate-dominating-file dir ".git"))))
-
-;; TODO: implement this.
-(defun sidekick--get-rg-path()
-    "Get the path of rg")
+        (let ((project-root (or
+                                (locate-dominating-file dir ".sidekick")
+                                (locate-dominating-file dir ".projectile")
+                                (locate-dominating-file dir ".git"))))
+        (if (not project-root)
+            (progn
+                (error "Sidekick: Project root directory not found.") nil)
+            project-root))))
 
 (defun sidekick--get-window-width()
     "Get the Sidekick window with in columns."
@@ -148,16 +193,19 @@
             (setq iterator (+ iterator 1)))
         modes-list))
 
-(defun sidekick--get-mode-file-glob-pattern(mode-name)
+(defun sidekick--get-mode-file-glob-pattern(mode-name buffer-fn)
     "Returns the glob pattern for a supported major mode."
     (let ((iterator 0)
              (glob-pat ""))
         (while (< iterator (length sidekick-mode-file-associations))
             (let ((mode (nth iterator sidekick-mode-file-associations)))
                 (when (string= (car mode) mode-name)
-                    (setq glob-pat (cdr mode))
-                    (setq iterator (length sidekick-mode-file-associations))
-                    ))
+                    ;; If the globs is empty, just use the current buffers
+                    ;; extension.
+                    (if (= (length (cdr mode)) 0)
+                        (setq glob-pat (concat "*." (file-name-extension buffer-fn nil)))
+                        (setq glob-pat (cdr mode)))
+                    (setq iterator (length sidekick-mode-file-associations))))
             (setq iterator (+ iterator 1)))
         glob-pat))
 
@@ -170,8 +218,8 @@
     (let ((iterator 0)
              (heading-fnl (concat "--| " heading " |")))
         (insert heading-fnl)
-        (while (< iterator (- (sidekick--get-window-width)
-                               (string-width heading-fnl)))
+        (while (< iterator
+                   (- (sidekick--get-window-width) (string-width heading-fnl)))
             (progn
                 (setq iterator (+ iterator 1))
                 (insert "-"))))
@@ -186,9 +234,8 @@
                 (insert "-"))))
     (insert "\n"))
 
-;; TODO: implement tests.
 (defun sidekick-draw-text-centerd(text)
-    "Center a string inside the sidekick window."
+    "Center a string inside the Sidekick window."
     (let ((text-lns (split-string text "\n"))
              (text-ln-max 0)
              (iterator 0))
@@ -199,10 +246,8 @@
                 (setq text-ln-max (string-width (nth iterator text-lns))))
             (setq iterator (+ iterator 1)))
 
-        ;; Reset iterator.
+        ;; Add padding to lines and print.
         (setq iterator 0)
-
-        ;; Add padding  lines and print.
         (let ((padding (- (sidekick--get-window-width) text-ln-max))
                  (padding-str ""))
 
@@ -212,15 +257,12 @@
 
             (while (< iterator (length text-lns))
                 (insert (concat padding-str (nth iterator text-lns) "\n"))
-                ;; (when (not (= (+ iterator 1) (length text-lns)))
-                ;; (insert "\n"))
                 (setq iterator (+ iterator 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Symbol References ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: improve window properties.
 (defun sidekick--update-footer(symbol symbol-str buffer-fn project-dir mode-name)
     "Draws the logo and version number at the bottom of the Sidekick buffer."
     (sidekick-draw-separator)
@@ -228,7 +270,7 @@
                         "------------ ----    ----\n"
                         "************ ****   ****\n"
                         "----         ----  ----\n"
-                        "************ *********    Version: 0.0.1\n"
+                        "************ *********    Version: 1.0.0\n"
                         "------------ ---------    --------------\n"
                         "       ***** ****  ****\n"
                         "------------ ----   ----\n"
@@ -236,47 +278,54 @@
         (sidekick-draw-text-centerd logo-str))
     (sidekick-draw-separator))
 
-;; TODO: Add option for case insensitive searches.
-;; TODO: Combine these methods into one external function?
-;; TODO: for C and C++ search header files to. Have mode / file extension.
-;; associations and generate a glob pattern for each.
+(defun sidekick--get-ripgrep-output-string(args symbol-str path mode-name buffer-fn)
+    "Runs Ripgrep and returns a string containing the output."
+    (let ((symbol-lit (concat "'" symbol-str "'"))
+             (glob-pat (concat
+                           "--glob="
+                           (sidekick--get-mode-file-glob-pattern mode-name buffer-fn))))
+        (let ((rg-cmd (mapconcat 'identity
+                          (list
+                              (sidekick--get-rg-executable-path)
+                              args
+                              glob-pat symbol-lit path) " ")))
+            (shell-command-to-string rg-cmd))))
+
 (defun sidekick--update-symbol-occur(symbol symbol-str buffer-fn project-dir mode-name)
     "Shows all occurrences of symbol in the current active buffer."
-    (cd project-dir)
     (sidekick-draw-section-heading "In Buffer")
-    (let ((file-glob (concat "--glob=" (sidekick--get-mode-file-glob-pattern mode-name))))
-        (let ((command (mapconcat
-                           'identity
-                           (list "rg -n --no-heading --no-filename --trim" (concat "'" symbol-str "'") buffer-fn) " ")))
-            (insert (shell-command-to-string command))
-            (insert "\n"))))
+    (cd project-dir)
+    (insert (sidekick--get-ripgrep-output-string
+                "-n --no-heading --no-filename --trim"
+                symbol-str
+                buffer-fn
+                mode-name
+                buffer-fn))
+    (insert "\n"))
 
 (defun sidekick--update-symbol-references(symbol symbol-str buffer-fn project-dir mode-name)
     "Shows all references to a symbol inside a project directory."
-    (cd project-dir)
     (sidekick-draw-section-heading "In Project")
-    (let ((file-glob (concat "--glob=" (sidekick--get-mode-file-glob-pattern mode-name))))
-        (let ((command (mapconcat
-                           'identity
-                           (list "rg -n --trim --heading" file-glob (concat "'" symbol-str "'") "./") " ")))
-            (insert (shell-command-to-string command))
-            (insert "\n"))))
+    (cd project-dir)
+    (insert (sidekick--get-ripgrep-output-string
+                "-n --heading --trim"
+                symbol-str
+                "./"
+                mode-name
+                buffer-fn))
+    (insert "\n"))
 
 (defun sidekick--update-symbol-files(symbol symbol-str buffer-fn project-dir mode-name)
     "Find all files containing the symbol."
-    ;; Count the number of files.
-    (let ((file-glob (concat "--glob=" (sidekick--get-mode-file-glob-pattern mode-name))))
-
-        ;; Change the directory to the project root before running grep.
-        (cd project-dir)
-        (sidekick-draw-section-heading "Files")
-
-        ;; Run grep and output results into sidekick buffer.
-        (let ((command (mapconcat
-                           'identity
-                           (list "rg -l" file-glob (concat "'" symbol-str "'") "./") " ")))
-            (insert (shell-command-to-string command))
-            (insert "\n"))))
+    (sidekick-draw-section-heading "Files")
+    (cd project-dir)
+    (insert (sidekick--get-ripgrep-output-string
+                "-l"
+                symbol-str
+                "./"
+                mode-name
+                buffer-fn))
+    (insert "\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
@@ -287,10 +336,14 @@
     ;; Pause future update calls.
     (setq sidekick-updating t)
 
+    ;; Set the activated in buffer name.
+    (setq sidekick-activated-in-buffer-fn buffer-fn)
+
     ;; Destroy buffer if it already exists.
     (when (get-buffer sidekick-buffer-name)
         (kill-buffer sidekick-buffer-name))
 
+    ;; SEE: https://www.gnu.org/software/emacs/manual/html_node/elisp/Window-Parameters.html
     ;; Create and setup buffer window.
     (display-buffer-in-side-window
         (get-buffer-create sidekick-buffer-name)
@@ -298,13 +351,11 @@
              (side . right)
              (slot . 0)
              (window-width . 0.25)
-             ;; TODO: optimize the display of the sidekick window.
-             ;; SEE: https://www.gnu.org/software/emacs/manual/html_node/elisp/Window-Parameters.html
              (window-parameters . (
-                                      ;;(no-other-window . t)
+                                      ;; TODO: Optimize the window.
+                                      ;; (no-other-window . t)
                                       ;; (mode-line-format . "")
-                                      (no-delete-other-windows . t)))
-             ))
+                                      (no-delete-other-windows . t)))))
 
     ;; Perform sidekick buffer operations.
     (with-current-buffer sidekick-buffer-name
@@ -323,7 +374,7 @@
             (sidekick-mode)
             (highlight-regexp symbol 'highlight)))
 
-    ;; TODO: implement focus option.
+    ;; If auto focus enabled, take focus.
     (when sidekick-auto-focus-post-update
         (switch-to-buffer-other-window sidekick-buffer-name))
 
@@ -336,21 +387,19 @@
 
 (defun sidekick--should-update(symbol buffer-fn project-dir mode-name)
     "Determines whether or not the sidekick buffer should be updated."
-    ;; Note: The symbol at this stage, might have text properties.
-    ;; TODO: What if the buffer has no file or extension.
     (and
         symbol
         buffer-fn
         project-dir
+        (sidekick--get-rg-executable-path)
+        buffer-file-name
         (not sidekick-updating)
         (> (string-width symbol) sidekick-min-symbol-length)
         (member mode-name (sidekick--extract-supported-modes))))
 
-(defun sidekick--trigger-update()
+(defun sidekick--trigger-update(symbol)
     "Gets called every 'sidekick-update-timeout' seconds."
-    (let ((symbol (thing-at-point 'symbol))
-             ;; TODO: What if the buffer has no file or extension.
-             (buffer-fn (or (buffer-file-name) (buffer-name)))
+    (let ((buffer-fn (buffer-file-name))
              (project-dir (sidekick--get-project-root-path))
              (mode-name (symbol-name major-mode)))
         (when (sidekick--should-update symbol buffer-fn project-dir mode-name)
@@ -362,30 +411,13 @@
 (defun sidekick-at-point()
     "Trigger sidekick panel update."
     (interactive)
-    (sidekick--trigger-update))
+    (sidekick--trigger-update (thing-at-point 'symbol)))
 
-;;;;;;;;;;;;;
-;; Testing ;;
-;;;;;;;;;;;;;
-
-(defun sidekick--testing()
+(defun sidekick-search-for-symbol()
+    "Search for a symbol using the given string literal"
     (interactive)
-    (print (sidekick--get-mode-file-glob-pattern "c-mode"))
-    ;; (print (symbol-name major-mode))
-    (print (sidekick--extract-supported-modes))
-    ;; (isearch-backward-regexp &optional NOT-REGEXP NO-RECURSIVE-EDIT)
-    ;; (print (sidekick--get-window-width))
-    ;; (print (window-width))
-    ;; (highlight-regexp "In Buffer" 'highlight)
-    ;; (print (thing-at-point 'symbol))
-    ;; (print (or (buffer-file-name) (buffer-name)))
-    ;; (print (sidekick--get-project-root-path))
-    ;; (print (not sidekick-updating))
-    ;; (print (> (string-width (thing-at-point 'symbol)) sidekick-min-symbol-length))
-    ;; (print (member (symbol-name major-mode) (sidekick--extract-supported-modes))
-    )
-
-(global-set-key (kbd "C-c t") 'sidekick--testing)
+    (let ((string-lit (read-string "Search (String Literal): ")))
+        (sidekick--trigger-update string-lit)))
 
 (provide 'sidekick)
 

@@ -4,7 +4,7 @@
 
 ;; Author: Vernon Grant <vernon@ruppell.io>
 ;; Version: 1.0.0
-;; Package-Requires: ((emacs "25"))
+;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: extensions, lisp
 ;; Homepage: https://github.com/VernonGrant/sidekick.el
 
@@ -24,7 +24,7 @@
 ;;; Commentary:
 
 ;; Sidekick is a Emacs extension that's aim is to provide useful information about
-;; a symbol inside a single panel.
+;; a symbol inside a single window.
 
 ;;; Code:
 
@@ -44,14 +44,20 @@
 ;; Sidekick Mode ;;
 ;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Implement defcustom where needed.
+
+;; User options.
+(defvar sidekick-min-symbol-length 2 "The minimum allowed symbol length.")
+(defvar sidekick-take-focus-post-update nil)
+(defvar sidekick-window-width 0.25 "The width of the sidekick window in fractional percentage.")
+(defvar sidekick-window-side 'right "The Sidekick window's position, left or right.")
+
+;; Internal variables.
 (defvar sidekick-mode-hook nil "*List of functions to call when entering Sidekick mode.")
 
 (defvar sidekick-updating nil "non-nil when sidekick is updating.")
 
-(defvar sidekick-min-symbol-length 2 "The minimum allowed symbol length.")
-
-(defvar sidekick-auto-focus-post-update t)
-
+;; TODO: Add rust and go.
 (defvar sidekick-mode-file-associations `(
                                              ;; Leaving globs empty, make
                                              ;; Sidekick use the current buffers
@@ -70,7 +76,8 @@
                                              ("css-mode"        . "*.{css,sass,scss}")
                                              ("web-mode"        . "")
                                              ("markdown-mode"   . "*.md")
-                                             ("emacs-lisp-mode" . "*.{el,emacs}")))
+                                             ("emacs-lisp-mode" . "*.{el,emacs}")
+                                             ))
 
 (defconst sidekick-buffer-name "*sidekick*")
 
@@ -134,7 +141,6 @@
             (print sidekick-activated-in-buffer-fn)
             (print (string (char-after)))
             (print (thing-at-point 'symbol))
-
             ;;(print (thing-at-point 'line))
          )
         (print "Ready to go")))
@@ -208,6 +214,10 @@
                     (setq iterator (length sidekick-mode-file-associations))))
             (setq iterator (+ iterator 1)))
         glob-pat))
+
+;; TODO: Implement this.
+(defun sidekick-set-mode-file-associations(mode-name globs)
+    "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick User Interface ;;
@@ -305,6 +315,7 @@
 
 (defun sidekick--update-symbol-references(symbol symbol-str buffer-fn project-dir mode-name)
     "Shows all references to a symbol inside a project directory."
+    ;; TODO: Exclude the current buffers file.
     (sidekick-draw-section-heading "In Project")
     (cd project-dir)
     (insert (sidekick--get-ripgrep-output-string
@@ -343,6 +354,9 @@
     (when (get-buffer sidekick-buffer-name)
         (kill-buffer sidekick-buffer-name))
 
+    ;; display-buffer-in-child-frame
+    ;; TODO: Can we make sidekick display in a different frame.
+
     ;; SEE: https://www.gnu.org/software/emacs/manual/html_node/elisp/Window-Parameters.html
     ;; Create and setup buffer window.
     (display-buffer-in-side-window
@@ -375,7 +389,7 @@
             (highlight-regexp symbol 'highlight)))
 
     ;; If auto focus enabled, take focus.
-    (when sidekick-auto-focus-post-update
+    (when sidekick-take-focus-post-update
         (switch-to-buffer-other-window sidekick-buffer-name))
 
     ;; Enable future update calls.
@@ -394,7 +408,10 @@
         (sidekick--get-rg-executable-path)
         buffer-file-name
         (not sidekick-updating)
-        (> (string-width symbol) sidekick-min-symbol-length)
+
+        ;; Clamps the symbol length to a minimum of two.
+        (> (string-width symbol) (progn (if (< sidekick-min-symbol-length 2) 2
+        sidekick-min-symbol-length)))
         (member mode-name (sidekick--extract-supported-modes))))
 
 (defun sidekick--trigger-update(symbol)

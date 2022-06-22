@@ -21,9 +21,11 @@ such as getting a symbols documentation and extracting other time saving
 information.
 
 If you experience any issues or there's a feature you would like to recommend,
-please open a [New Issue](https://github.com/VernonGrant/sidekick.el/issues/new).
+please open a [new issue](https://github.com/VernonGrant/sidekick.el/issues/new).
 
-#### Current Feature List
+![Screenshot of sidekick](/assets/images/sidekick.png?raw=true "Sidekick for Emacs")
+
+#### Current feature list
 
 - Finds matching symbols in the current buffer.
 - Finds matching symbols across your [projects](#how-it-finds-your-project-root-directory) code base.
@@ -31,14 +33,38 @@ please open a [New Issue](https://github.com/VernonGrant/sidekick.el/issues/new)
 
 ## Installation
 
-**Important:** Ripgrep is required. Please insure that you have RipGrep
-installed and available in your system path.
+Important: **ripgrep (rg) is required!** Please insure that you have `ripgrep`
+installed and available in your system path, see [Installing
+ripgrep](https://github.com/BurntSushi/ripgrep#installation).
+
+#### Melpa
+
+#### Use package
 
 ## Usage
 
 ## Configuration
 
+#### Project directory
+
+#### Options & settings
+
+- **sidekick-min-symbol-length:** The minimum symbol length required in order
+  for Sidekick to update. Be careful making this value to small in larger
+  projects as it will result in a lot more matches and this might make things slow.
+  - **Type:** integer
+  - **Default:** 2
+  - **Example**:
+	```lisp
+	;; Should set inside your emacs configuration.
+	(seq sidekick-min-symbol-length 3)
+	```
+
+#### Adding modes and customizing globs
+
 ## Overview
+
+#### What is a symbol?
 
 #### How it finds your project root directory
 

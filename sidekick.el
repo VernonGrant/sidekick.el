@@ -175,6 +175,32 @@
 ;; Sidekick Keymap Interactions ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun sidekick--get-match-line-num-and-path()
+    ""
+    (let ((match-line-num nil)
+             (match-file-path nil))
+        ;; get the match's line number.
+        (when (string-match "^[0-9]+" (thing-at-point 'line t))
+            (setq match-line-num
+                (string-to-number (match-string 0 (thing-at-point 'line t)))))
+
+        ;; get the match's file path.
+        (save-excursion
+            ;; NOTE: This can be optimized using re-search.
+            ;; If not on a file path, move up until one is found.
+            (unless (string-match "^\\.\\/.+" (thing-at-point 'line t))
+                (while (and (> (string-width (thing-at-point 'line t)) 0)
+                           (> (line-number-at-pos (point)) 1))
+                    (previous-line))
+                ;;(next-line)
+                )
+            (when (string-match "^\\.\\/.+" (thing-at-point 'line t))
+                (setq match-file-path  (buffer-substring-no-properties
+                                           (line-beginning-position)
+                                           (line-end-position)))))
+
+        (list match-line-num match-file-path)))
+
 (defun sidekick-quit()
     ""
     (interactive)
@@ -184,16 +210,19 @@
 (defun sidekick-preview-match-previous()
     ""
     (interactive)
-    (print "Sidekick: Preview match previous!")
-    (previous-line)
-    )
+    (when (string= (symbol-name major-mode) "sidekick-mode")
+        (previous-line)
+        (sidekick-open-match)
+        (select-window (get-buffer-window sidekick-buffer-name))
+        ))
 
 (defun sidekick-preview-match-next()
     ""
     (interactive)
-    (print "Sidekick: Preview match next!")
-    (next-line)
-    )
+    (when (string= (symbol-name major-mode) "sidekick-mode")
+        (next-line)
+        (sidekick-open-match)
+        (select-window (get-buffer-window sidekick-buffer-name))))
 
 (defun sidekick-refresh()
     "Refreshes the sidekick buffer using the same metrics as before"
@@ -209,43 +238,27 @@
     ""
     (interactive)
     (when (string= (symbol-name major-mode) "sidekick-mode")
-        (let ((match-line-num nil)
-                 (match-file-path nil))
+        (let ((match-line-and-path (sidekick--get-match-line-num-and-path)))
+            (let ((match-line-num (nth 0 match-line-and-path))
+                     (match-file-path (nth 1 match-line-and-path)))
 
-            ;; get the match's line number.
-            (when (string-match "^[0-9]+" (thing-at-point 'line t))
-                (setq match-line-num
-                    (string-to-number (match-string 0 (thing-at-point 'line t)))))
+                (print match-line-num)
+                (print match-file-path)
 
-            ;; get the match's file path.
-            (save-excursion
-                ;; NOTE: This can be optimized using re-search.
-                ;; If not on a file path, move up until one is found.
-                (unless (string-match "^\\.\\/.+" (thing-at-point 'line t))
-                    (while (and (> (string-width (thing-at-point 'line t)) 0)
-                               (> (line-number-at-pos (point)) 1))
-                        (previous-line))
-                    (next-line))
-                (when (string-match "^\\.\\/.+" (thing-at-point 'line t))
-                    (setq match-file-path  (buffer-substring-no-properties
-                                               (line-beginning-position)
-                                               (line-end-position)))))
+                ;; If file path, open file else open previous buffer.
+                (if match-file-path
+                    (switch-to-buffer-other-window
+                        (find-file-noselect match-file-path nil nil))
+                    (switch-to-buffer-other-window
+                        (find-file-noselect sidekick-state-buffer-fn nil nil)))
 
-            ;; If file path, open file else open previous buffer.
-            (if match-file-path
-                (switch-to-buffer-other-window
-                    (find-file-noselect match-file-path nil nil))
-                (switch-to-buffer-other-window
-                    (find-file-noselect sidekick-state-buffer-fn nil nil)))
-
-            ;; Go to the matching line if needed.
-            (when match-line-num
-                (goto-line match-line-num)
-                ;; TODO: Escape string for regexUse symbol as literal
-                (re-search-forward sidekick-state-symbol-str)
-                (re-search-backward sidekick-state-symbol-str)
-                (recenter-top-bottom))
-            )))
+                ;; Go to the matching line if needed.
+                (when match-line-num
+                    (goto-line match-line-num)
+                    ;; TODO: Escape string for regexUse symbol as literal
+                    (re-search-forward sidekick-state-symbol-str)
+                    (re-search-backward sidekick-state-symbol-str)
+                    (recenter-top-bottom 0))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Utilities ;;
@@ -445,10 +458,15 @@
 ;; Sidekick Functionality ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+
 (defun sidekick--update(symbol symbol-str buffer-fn project-dir mode-name)
     "Updates the Sidekick panel with symbol related information."
     ;; Pause future update calls.
     (setq sidekick-updating t)
+
+    ;; Remove clean state.
+    (setq sidekick-state-clean nil)
 
     ;; Set state, previous buffer.
     (setq sidekick-state-buffer-name buffer-fn)

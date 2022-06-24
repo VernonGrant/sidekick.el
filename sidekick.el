@@ -37,22 +37,21 @@
 ;; TODO: Implement defcustom where needed.
 ;; TODO: Add case insensitive option.
 ;; TODO: Escape regexp characters from search string.
+;; TODO: Highlight or flash marching term.
 
 ;; User options.
 (defvar sidekick-min-symbol-length 2 "The minimum allowed symbol length.")
 (defvar sidekick-take-focus nil)
 (defvar sidekick-window-width 0.25 "The width of the sidekick window in fractional percentage.")
 (defvar sidekick-window-side 'right "The Sidekick window's position, left or right.")
+(defvar sidekick-hide-footer nil)
 
 ;; Temp:
-(setq sidekick-window-side 'right)
+(setq sidekick-min-symbol-length 3)
+(setq sidekick-window-side 'left)
 (setq sidekick-window-width 0.25)
 (setq sidekick-take-focus nil)
-
-;; Internal variables.
-(defvar sidekick-mode-hook nil "*List of functions to call when entering Sidekick mode.")
-
-(defvar sidekick-updating nil "non-nil when sidekick is updating.")
+(setq sidekick-hide-footer t)
 
 ;; TODO: Add rust and go.
 (defvar sidekick-mode-file-associations `(
@@ -83,6 +82,7 @@
 (defconst sidekick-match-file-path-reg "^\\.\\/.+")
 
 ;; State keeping.
+(defvar sidekick-state-updating nil "non-nil when sidekick is updating.")
 (defvar sidekick-state-clean t)
 (defvar sidekick-state-mode-name nil)
 (defvar sidekick-state-project-dir nil)
@@ -132,8 +132,7 @@
         (setq buffer-read-only t)
         (setq font-lock-defaults '(sidekick-highlights))
         (display-line-numbers-mode 0)
-        (use-local-map sidekick-mode-map)
-        (run-hooks 'sidekick-mode-hook)))
+        (use-local-map sidekick-mode-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Keymap Interactions ;;
@@ -403,18 +402,19 @@ symbol if given, else go's to beginning of file."
 
 (defun sidekick--update-footer(symbol symbol-str buffer-fn project-dir mode-name)
     "Draws the logo and version number at the bottom of the Sidekick buffer."
-    (sidekick-draw-separator)
-    (let ((logo-str (concat
-                        "------------ ----    ----\n"
-                        "************ ****   ****\n"
-                        "----         ----  ----\n"
-                        "************ *********    Version: 1.0.0\n"
-                        "------------ ---------    --------------\n"
-                        "       ***** ****  ****\n"
-                        "------------ ----   ----\n"
-                        "************ ****    ****")))
-        (sidekick-draw-text-centerd logo-str))
-    (sidekick-draw-separator))
+    (unless sidekick-hide-footer
+        (sidekick-draw-separator)
+        (let ((logo-str (concat
+                            "------------ ----    ----\n"
+                            "************ ****   ****\n"
+                            "----         ----  ----\n"
+                            "************ *********    Version: 1.0.0\n"
+                            "------------ ---------    --------------\n"
+                            "       ***** ****  ****\n"
+                            "------------ ----   ----\n"
+                            "************ ****    ****")))
+            (sidekick-draw-text-centerd logo-str))
+        (sidekick-draw-separator)))
 
 (defun sidekick--get-ripgrep-output-string(args symbol-str path mode-name buffer-fn)
     "Runs Ripgrep and returns a string containing the output."
@@ -475,7 +475,7 @@ symbol if given, else go's to beginning of file."
 (defun sidekick--update(symbol symbol-str buffer-fn project-dir mode-name)
     "Updates the Sidekick panel with symbol related information."
     ;; Pause future update calls.
-    (setq sidekick-updating t)
+    (setq sidekick-state-updating t)
 
     ;; Remove clean state.
     (setq sidekick-state-clean nil)
@@ -546,7 +546,7 @@ symbol if given, else go's to beginning of file."
             (switch-to-buffer-other-window sidekick-buffer-name)))
 
     ;; Enable future update calls.
-    (setq sidekick-updating nil))
+    (setq sidekick-state-updating nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Triggers ;;
@@ -559,7 +559,7 @@ symbol if given, else go's to beginning of file."
         buffer-fn
         project-dir
         (sidekick--get-rg-executable-path)
-        (not sidekick-updating)
+        (not sidekick-state-updating)
         ;; Clamps the symbol length to a minimum of two.
         (> (string-width symbol) (if (< sidekick-min-symbol-length 2) 2
         sidekick-min-symbol-length))

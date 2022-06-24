@@ -32,7 +32,7 @@
 ;; Sidekick Mode ;;
 ;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Add method that can modify the file associations.
+;; TODO: Add method that will focus on Sidekick window if available.
 ;; TODO: Add all missing documentation.
 ;; TODO: Implement defcustom where needed.
 ;; TODO: Add case insensitive option.
@@ -46,35 +46,35 @@
 (defvar sidekick-window-side 'right "The Sidekick window's position, left or right.")
 (defvar sidekick-hide-footer nil)
 
-;; Temp:
-(setq sidekick-min-symbol-length 3)
-(setq sidekick-window-side 'left)
-(setq sidekick-window-width 0.25)
-(setq sidekick-take-focus nil)
-(setq sidekick-hide-footer t)
+;; Internal variables.
+(defvar sidekick-mode-hook nil "*List of functions to call when entering Sidekick mode.")
 
-;; TODO: Add rust and go.
+;; Temp:
+(setq sidekick-min-symbol-length 2)
+(setq sidekick-window-side 'right)
+(setq sidekick-window-width 0.2)
+(setq sidekick-take-focus t)
+(setq sidekick-hide-footer nil)
+
 (defvar sidekick-mode-file-associations `(
-                                             ;; Leaving globs empty, makes
-                                             ;; Sidekick use the current buffers
-                                             ;; extension.
-                                             ("cperl-mode"      . "*.{pl,PL}")
-                                             ("python-mode"     . "*.py")
-                                             ("php-mode"        . "*.{php,phtml,twig}")
-                                             ("js-mode"         . "*.{js,es,es6}")
-                                             ("typescript-mode" . "*.ts")
-                                             ("java-mode"       . "*.java")
-                                             ("json-mode"       . "*.json")
-                                             ("yaml-mode"       . "*.yml")
-                                             ("xml-mode"        . "*.xml")
-                                             ("rust-mode"       . "*.rs")
-                                             ("go-mode"         . "*.go")
-                                             ("c-mode"          . "*.{c,cc,h,hh}")
                                              ("c++-mode"        . "*.{cpp,h,hh}")
+                                             ("c-mode"          . "*.{c,cc,h,hh}")
+                                             ("cperl-mode"      . "*.{pl,PL}")
                                              ("css-mode"        . "*.{css,sass,scss}")
-                                             ("web-mode"        . "")
+                                             ("emacs-lisp-mode" . "*.{el,emacs}")
+                                             ("go-mode"         . "*.go")
+                                             ("java-mode"       . "*.java")
+                                             ("js-mode"         . "*.{js,es,es6}")
+                                             ("json-mode"       . "*.json")
                                              ("markdown-mode"   . "*.md")
-                                             ("emacs-lisp-mode" . "*.{el,emacs}")))
+                                             ("php-mode"        . "*.{php,phtml,twig}")
+                                             ("python-mode"     . "*.py")
+                                             ("ruby-mode"       . "*.rb")
+                                             ("rust-mode"       . "*.rs")
+                                             ("typescript-mode" . "*.ts")
+                                             ("web-mode"        . "")
+                                             ("xml-mode"        . "*.xml")
+                                             ("yaml-mode"       . "*.yml")))
 
 ;; Private variables
 (defconst sidekick-buffer-name "*sidekick*")
@@ -94,11 +94,11 @@
 (defvar sidekick-mode-map
     (let ((map (make-sparse-keymap)))
         (define-key map "q" 'sidekick-quit)
-        (define-key map "p" 'sidekick-preview-previous-match)
-        (define-key map "n" 'sidekick-preview-next-match)
-        (define-key map "o" 'sidekick-goto-match-other-window)
-        (define-key map (kbd "RET") 'sidekick-goto-match)
         (define-key map "g" 'sidekick-refresh)
+        (define-key map "n" 'sidekick-open-next-match)
+        (define-key map "p" 'sidekick-open-previous-match)
+        (define-key map (kbd "RET") 'sidekick-open-match)
+        (define-key map "o" 'sidekick-open-match-other-window)
         map))
 
 (setq sidekick-highlights
@@ -132,7 +132,8 @@
         (setq buffer-read-only t)
         (setq font-lock-defaults '(sidekick-highlights))
         (display-line-numbers-mode 0)
-        (use-local-map sidekick-mode-map)))
+        (use-local-map sidekick-mode-map)
+        (run-hooks 'sidekick-mode-hook)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Keymap Interactions ;;
@@ -194,14 +195,15 @@
             (progn (beginning-of-buffer)))))
 
 (defun sidekick-quit()
-    "Closes the sidekick window and kills the buffer."
+    "Closes the sidekick window and kills it's related buffer."
     (interactive)
     ;; NOTE: Might need to do some cleanup here.
     (quit-window)
     (kill-buffer sidekick-buffer-name))
 
-(defun sidekick-preview-previous-match()
-    "Create the previous match's buffer and displays it's symbol."
+(defun sidekick-open-previous-match()
+    "Displays the previous match, opening it's related buffer and
+moving to the matching symbol."
     (interactive)
     (when (string= (symbol-name major-mode) "sidekick-mode")
         ;; Go to previous line.
@@ -217,8 +219,9 @@
                 (when match-line-num
                     (sidekick--match-buffer-operations match-buffer match-line-num))))))
 
-(defun sidekick-preview-next-match()
-    "Create the next match's buffer and displays it's symbol."
+(defun sidekick-open-next-match()
+    "Displays the next match, opening it's related buffer and
+moving to the matching symbol."
     (interactive)
     (when (string= (symbol-name major-mode) "sidekick-mode")
         ;; Go to next line.
@@ -235,7 +238,7 @@
                     (sidekick--match-buffer-operations match-buffer match-line-num))))))
 
 (defun sidekick-refresh()
-    "Refreshes the sidekick buffer using the same metrics as before"
+    "Reruns the previous Sidekick operations, refreshing the results."
     (interactive)
     (unless sidekick-state-clean
         (sidekick--trigger-update
@@ -244,9 +247,8 @@
             sidekick-state-mode-name)
         (message "Sidekick: refreshed!")))
 
-(defun sidekick-goto-match()
-    "Creates the match's buffer and go's to the symbol if given,
-else go's to beginning of file."
+(defun sidekick-open-match()
+    "Go's directly to the match's symbol, creating a buffer if needed."
     (interactive)
     (when (string= (symbol-name major-mode) "sidekick-mode")
         (let ((match-line-and-path (sidekick--match-get-line-and-path)))
@@ -258,7 +260,7 @@ else go's to beginning of file."
                 ;; Go to line number.
                 (sidekick--match-buffer-operations match-buffer match-line-num)))))
 
-(defun sidekick-goto-match-other-window()
+(defun sidekick-open-match-other-window()
     "Creates the match's buffer in other window and go's to the
 symbol if given, else go's to beginning of file."
     (interactive)
@@ -342,9 +344,15 @@ symbol if given, else go's to beginning of file."
             (setf (alist-get 'side buf-window-alist) sidekick-window-side)
             (display-buffer-in-side-window buf buf-window-alist))))
 
-;; TODO: Implement this.
-(defun sidekick-set-mode-file-associations(mode-name globs)
-    "")
+(defun sidekick-set-file-associations(mode-name globs)
+    "Set"
+    (let ((mode-alist (assoc mode-name sidekick-mode-file-associations)))
+        ;; Push new alist if the mode does not exist.
+        (unless mode-alist
+            (push (list mode-name globs) sidekick-mode-file-associations))
+        ;; Update existing alist if the mode does exist.
+        (when mode-alist
+            (setcdr (assoc (car mode-alist) sidekick-mode-file-associations) globs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick User Interface ;;
@@ -566,7 +574,7 @@ symbol if given, else go's to beginning of file."
         (member mode-name (sidekick--extract-supported-modes))))
 
 (defun sidekick--trigger-update(symbol buffer-fn mode-name)
-    "."
+    "Triggers the Sidekick update procedure."
     (let ((project-dir (sidekick--get-project-root-path)))
         (when (sidekick--should-update symbol buffer-fn project-dir mode-name)
             (sidekick--update symbol (substring-no-properties symbol)
@@ -574,19 +582,29 @@ symbol if given, else go's to beginning of file."
                 project-dir
                 mode-name))))
 
+(defun sidekick-focus()
+    "Will focus on the Sidekick window, if available."
+    (interactive)
+    (let ((sidekick-window (get-buffer-window sidekick-buffer-name)))
+        (when sidekick-window
+            (select-window sidekick-window))))
+
 (defun sidekick-at-point()
-    "Trigger sidekick panel update."
+    "Uses the symbol at point as the symbol and updates the Sidekick results."
     (interactive)
     (sidekick--trigger-update
         (thing-at-point 'symbol)
         (buffer-file-name)
         (symbol-name major-mode)))
 
-;; (defun sidekick-search-for-symbol()
-;;     "Search for a symbol using the given string literal"
-;;     (interactive)
-;;     (let ((string-lit (read-string "Search (String Literal): ")))
-;;         (sidekick--trigger-update string-lit)))
+(defun sidekick-search-for-literal()
+    "Search for a literal string."
+    (interactive)
+    (let ((string-lit (read-string "Search (Literal): ")))
+        (sidekick--trigger-update
+            string-lit
+            (buffer-file-name)
+            (symbol-name major-mode))))
 
 (provide 'sidekick)
 

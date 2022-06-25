@@ -42,10 +42,11 @@ Clone this repository locally, and add this to your `.emacs`:
 
 ;; Set some default bindings.
 (global-set-key (kbd "C-c k") 'sidekick-at-point)
+(global-set-key (kbd "C-c K") 'sidekick-focus-toggle)
 (global-set-key (kbd "C-c C-k") 'sidekick-search-for-literal)
 
 ;; Optional:
-;; Maybe define some custom mode, file assosiations?
+;; Maybe customize a mode's file assosiations?
 (sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
 ```
 
@@ -55,14 +56,13 @@ Clone this repository locally, and add this to your `.emacs`:
 
 The following keybindings are **available inside the Sidekick** window/mode.
 
-| Key   | Command                              | Description                                                                                 |
-|-------|--------------------------------------|---------------------------------------------------------------------------------------------|
-| `q`   | **sidekick-quit**                    | Closes the Sidekick window and kills it's related buffer.                                   |
-| `g`   | **sidekick-refresh**                 | Reruns the previous Sidekick operations, refreshing the results.                            |
-| `n`   | **sidekick-open-next-match**         | Displays the next match, opening it's related buffer and moving to the matching symbol.     |
-| `p`   | **sidekick-open-previous-match**     | Displays the previous match, opening it's related buffer and moving to the matching symbol. |
-| `RET` | **sidekick-open-match**              | Go's directly to the match's symbol, creating a buffer if needed.                           |
-| `o`   | **sidekick-open-match-other-window** | Go's directly to the match's symbol, creating a buffer if needed and forcing other window.  |
+| Key   | Command                              | Description                                                                                |
+|-------|--------------------------------------|--------------------------------------------------------------------------------------------|
+| `q`   | **sidekick-quit**                    | Closes the Sidekick window and kills it's buffer.                                          |
+| `g`   | **sidekick-refresh**                 | Reruns the previous operations, refreshing the results.                                    |
+| `n`   | **sidekick-open-next-match**         | Displays the next match, creating and opening it's buffer.                                 |
+| `p`   | **sidekick-open-previous-match**     | Displays the previous match, creating and opening it's buffer.                             |
+| `RET` | **sidekick-open-match**              | Go's directly to the match's symbol, creating a buffer if needed.                          |
 
 You can customize keybindings that are local to the Sidekick window, like this:
 
@@ -76,17 +76,19 @@ You can customize keybindings that are local to the Sidekick window, like this:
 
 #### Unbound commands
 
-| Command                         | Description                                                              |
-|---------------------------------|--------------------------------------------------------------------------|
-| **sidekick-at-point**           | Uses the symbol at point as the symbol and updates the Sidekick results. |
-| **sidekick-focus**              | Will focus on the Sidekick window, if available.                         |
-| **sidekick-search-for-literal** | Search for a literal string instead.                                     |
+| Command                         | Description                                                                 |
+|---------------------------------|-----------------------------------------------------------------------------|
+| **sidekick-at-point**           | Takes the symbol at point and triggers a Sidekick update.                   |
+| **sidekick-focus**              | Will focus on the Sidekick window, if visible.                              |
+| **sidekick-focus-toggle**       | Will toggle between sidekick window and previous buffer window, if visible. |
+| **sidekick-search-for-literal** | Input a literal string and triggers a Sidekick update.                      |
 
 You can define custom key bindings for any of the above commands. See the below
 example:
 
 ```lisp
 (global-set-key (kbd "C-c k") 'sidekick-at-point)
+(global-set-key (kbd "C-c K") 'sidekick-focus-toggle)
 (global-set-key (kbd "C-c C-k") 'sidekick-search-for-literal)
 ```
 
@@ -101,46 +103,48 @@ directory is determined by having one of the following files or folders.
 - A file named `.projectile`
 - A git repository `.git`
 
-#### Current available settings
+#### Current available customizations
 
-- **sidekick-min-symbol-length:** The minimum symbol length required in order for
-	Sidekick to update. The lowest number possible is 2.
-  - **Type:** integer
-  - **Default:** `2`
-  - **Example**:
+- **sidekick-search-minimum-symbol-length:** The minimum symbol / term length in
+	order for Sidekick to update. The lowest number possible is 2.
+  - Type: integer
+  - Default: `2`
+  - Example:
 	```lisp
-	(setq sidekick-min-symbol-length 3)
+	(setq sidekick-search-minimum-symbol-length 3)
 	```
 
-- **sidekick-take-focus:** If non-nil, automatically focus on the
-  sidekick window after each update.
-  - **Type:** boolean
-  - **Default:** `nil`
-  - **Example**:
+- **sidekick-window-take-focus:** If non-nil, automatically select the sidekick
+  window after every update.
+  - Type: boolean
+  - Default: `nil`
+  - Example:
 	```lisp
-	(setq sidekick-take-focus t)
+	(setq sidekick-window-take-focus nil)
 	```
-- **sidekick-window-width:** The width of the sidekick window in fractional percentage.
-  - **Type:** float
-  - **Default:** `0.25`
-  - **Example**:
+
+- **sidekick-window-width:** The width of the sidekick window in normalized percentage.
+  - Type: float
+  - Default: `0.25`
+  - Example:
 	```lisp
 	(setq sidekick-window-width 0.2)
 	```
-- **sidekick-window-side:** The Sidekick window's position, left or right.
-  - **Type:** symbol
-  - **Default:** `'right`
-  - **Example**:
+
+- **sidekick-window-side:** The Sidekick window position, left or right.
+  - Type: symbol
+  - Default: `'right`
+  - Example:
 	```lisp
 	(setq sidekick-window-side 'left)
 	```
 
-- **sidekick-hide-footer:** Hides the Sidekick footer branding.
-  - **Type:** boolean
-  - **Default:** `nil`
-  - **Example**:
+- **sidekick-window-hide-footer:** Remove the Sidekick footer branding.
+  - Type: boolean
+  - Default: `nil`
+  - Example:
 	```lisp
-	(setq sidekick-hide-footer t)
+	(setq sidekick-window-hide-footer t)
 	```
 
 #### Modifying a mode's associated files

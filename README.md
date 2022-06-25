@@ -23,8 +23,7 @@ getting a symbols documentation and extracting other time saving information.
 If you experience any issues or there's a feature you would like to recommend,
 please open a [new issue](https://github.com/VernonGrant/sidekick.el/issues/new).
 
-<!-- TODO: change this to a raw path once published -->
-![Screenshot of sidekick](/assets/images/sidekick.png?raw=true "Sidekick for Emacs")
+![Screenshot of sidekick](https://raw.githubusercontent.com/VernonGrant/sidekick.el/main/assets/images/sidekick.png "Sidekick for Emacs")
 
 ## Installation
 

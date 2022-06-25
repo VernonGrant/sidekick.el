@@ -34,7 +34,7 @@ ripgrep](https://github.com/BurntSushi/ripgrep#installation).
 
 #### Manual installation
 
-Clone this repository locally, and add this to your `.emacs`:
+Clone this repository locally, and add the load path to your `.emacs`:
 
 ```lisp
 (add-to-list 'load-path "/path/to/sidekick/")
@@ -149,9 +149,9 @@ directory is determined by having one of the following files or folders.
 
 #### Modifying a mode's associated files
 
-The blow list specifies the default mode - file associations. **If a mode's
-provided glob pattern is an empty string, Sidekick will just search for files
-withe the same extension as the active buffer**
+The blow list specifies the default mode - file associations. **If the provided
+glob pattern is an empty string, Sidekick will just search for files with the
+same extension as the active buffer**.
 
 | Mode            | Files                 | Mode            | Files                  |
 |-----------------|-----------------------|-----------------|------------------------|
@@ -179,10 +179,10 @@ function has been provided. See the below usage example:
 
 ## Credits
 
-I feel obliged to tank the organizations and people behind some of the tools and educational
-resources that was used to complete this project.
+The following tools and educational resources where invaluable during the
+development of this package.
 
 - [Free Software Foundation](https://www.fsf.org/)
 - Xah Lee, author of [Xah Emacs Tutorial](http://xahlee.info/emacs/index.html)
 - Mickey Petersen, author of [Mastering Emacs](https://www.masteringemacs.org/)
-- Andrew Gallant (BurntSushi), creator of [Ripgrep](https://github.com/BurntSushi/ripgrep)
+- Andrew Gallant (BurntSushi), creator of [ripgrep](https://github.com/BurntSushi/ripgrep)

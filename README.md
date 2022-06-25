@@ -13,7 +13,7 @@
 ------------------------------
 ```
 
-Sidekick is an **Emacs extension** that's aim is to provide useful information
+Sidekick is an **Emacs package** that's aim is to provide useful information
 about a symbol inside a single window. It's still in it's infancy, and at this
 point in time only searches for references using
 [ripgrep](https://github.com/BurntSushi/ripgrep). It will however be in active
@@ -53,15 +53,15 @@ Clone this repository locally, and add the load path to your `.emacs`:
 
 #### Default key bindings
 
-The following keybindings are **available inside the Sidekick** window/mode.
+The following keybindings are available inside the Sidekick window/mode.
 
-| Key   | Command                              | Description                                                                                |
-|-------|--------------------------------------|--------------------------------------------------------------------------------------------|
-| `q`   | **sidekick-quit**                    | Closes the Sidekick window and kills it's buffer.                                          |
-| `g`   | **sidekick-refresh**                 | Reruns the previous operations, refreshing the results.                                    |
-| `n`   | **sidekick-open-next-match**         | Displays the next match, creating and opening it's buffer.                                 |
-| `p`   | **sidekick-open-previous-match**     | Displays the previous match, creating and opening it's buffer.                             |
-| `RET` | **sidekick-open-match**              | Go's directly to the match's symbol, creating a buffer if needed.                          |
+| Key   | Command                          | Description                                              |
+|-------|----------------------------------|----------------------------------------------------------|
+| `q`   | **sidekick-quit**                | Closes the Sidekick window and kills it's buffer.        |
+| `g`   | **sidekick-refresh**             | Re-runs the previous operations, refreshing the results. |
+| `n`   | **sidekick-open-next-match**     | Displays the next match.                                 |
+| `p`   | **sidekick-open-previous-match** | Displays the previous match.                             |
+| `RET` | **sidekick-open-match**          | Go's directly to the matched symbol.                     |
 
 You can customize keybindings that are local to the Sidekick window, like this:
 
@@ -75,12 +75,12 @@ You can customize keybindings that are local to the Sidekick window, like this:
 
 #### Unbound commands
 
-| Command                         | Description                                                                 |
-|---------------------------------|-----------------------------------------------------------------------------|
-| **sidekick-at-point**           | Takes the symbol at point and triggers a Sidekick update.                   |
-| **sidekick-focus**              | Focus on the Sidekick window, if visible.                              |
-| **sidekick-focus-toggle**       | Toggle between sidekick window and previous buffer window, if visible. |
-| **sidekick-search-for-literal** | Input a literal string and triggers a Sidekick update.                      |
+| Command                         | Description                                                  |
+|---------------------------------|--------------------------------------------------------------|
+| **sidekick-at-point**           | Takes the symbol at point and triggers the update call.      |
+| **sidekick-focus**              | Focuses on the Sidekick window, if visible.                  |
+| **sidekick-focus-toggle**       | Toggle between sidekick window and previous buffer's window. |
+| **sidekick-search-for-literal** | Input a literal string and triggers the update call.         |
 
 You can define custom key bindings for any of the above commands. See the below
 example:
@@ -95,14 +95,13 @@ example:
 
 #### How the projects root directory is determined
 
-Sidekick searches for files relative to your projects root directory. The root
-directory is determined by having one of the following files or folders.
+A projects root directory is determined by having one of the following files.
 
 - A file named `.sidekick` *(highest priority)*
 - A file named `.projectile`
 - A git repository `.git`
 
-#### Current available customizations
+#### Available customizations
 
 - **sidekick-search-minimum-symbol-length:** The minimum symbol / term length in
 	order for Sidekick to update. The lowest number possible is 2.
@@ -116,7 +115,7 @@ directory is determined by having one of the following files or folders.
 - **sidekick-window-take-focus:** If non-nil, automatically select the sidekick
   window after every update.
   - Type: boolean
-  - Default: `nil`
+  - Default: `t`
   - Example:
 	```lisp
 	(setq sidekick-window-take-focus nil)
@@ -124,10 +123,10 @@ directory is determined by having one of the following files or folders.
 
 - **sidekick-window-width:** The width of the sidekick window in normalized percentage.
   - Type: float
-  - Default: `0.25`
+  - Default: `0.225`
   - Example:
 	```lisp
-	(setq sidekick-window-width 0.2)
+	(setq sidekick-window-width 0.3)
 	```
 
 - **sidekick-window-side:** The Sidekick window position, left or right.

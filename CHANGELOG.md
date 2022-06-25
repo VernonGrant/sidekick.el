@@ -7,3 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [1.0.0] - 2022-06-25
+
+#### Added
+- Basic key bindings.
+- Basic readme file.
+- Basic release features.
+- Customizations.
+- File and mode globs.
+- Footer branding
+- Implemented missing options
+- Option to hide footer branding.
+- Screenshot.

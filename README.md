@@ -79,8 +79,8 @@ You can customize keybindings that are local to the Sidekick window, like this:
 | Command                         | Description                                                                 |
 |---------------------------------|-----------------------------------------------------------------------------|
 | **sidekick-at-point**           | Takes the symbol at point and triggers a Sidekick update.                   |
-| **sidekick-focus**              | Will focus on the Sidekick window, if visible.                              |
-| **sidekick-focus-toggle**       | Will toggle between sidekick window and previous buffer window, if visible. |
+| **sidekick-focus**              | Focus on the Sidekick window, if visible.                              |
+| **sidekick-focus-toggle**       | Toggle between sidekick window and previous buffer window, if visible. |
 | **sidekick-search-for-literal** | Input a literal string and triggers a Sidekick update.                      |
 
 You can define custom key bindings for any of the above commands. See the below
@@ -170,10 +170,9 @@ function has been provided. See the below usage example:
 
 ```lisp
 ;; Adds a new mode, glob pair.
-(sidekick-set-file-associations "example-mode" "*.extension-a")
-(sidekick-set-file-associations "some-other-mode" "")
+(sidekick-set-file-associations "example-mode" "*.{exam,examp}")
 
-;; Updates an existing mode's file globs.
+;; Replace an existing mode's file globs.
 (sidekick-set-file-associations "php-mode" "*.{php,blade,twig}")
 ```
 

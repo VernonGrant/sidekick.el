@@ -28,8 +28,6 @@
 
 ;;; Code:
 
-;; TODO: Escape string for regexUse symbol as literal.
-
 ;;;;;;;;;;;;;;;;;;;;
 ;; Customizations ;;
 ;;;;;;;;;;;;;;;;;;;;

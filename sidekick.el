@@ -23,8 +23,8 @@
 
 ;;; Commentary:
 
-;; Sidekick is a Emacs extension that's aim is to provide useful information about
-;; a symbol inside a single window.
+;; Sidekick is a Emacs package that's aim is to provide information about a
+;; symbol inside a single window.
 
 ;;; Code:
 
@@ -247,8 +247,9 @@ MATCH-LINE-NUM The match's line number."
             (progn
                 (goto-char (point-min))
                 (forward-line (1- match-line-num))
-                (re-search-forward sidekick--state-symbol-str nil t)
-                (re-search-backward sidekick--state-symbol-str nil t)
+                ;;
+                (re-search-forward (regexp-quote sidekick--state-symbol-str) nil t)
+                (re-search-backward (regexp-quote sidekick--state-symbol-str) nil t)
                 (recenter))))
 
     ;; If line number is nil, then this must be a file path so just go to the
@@ -517,7 +518,7 @@ SYMBOL-STR The symbol without text properties, string format.
 PATH The path from where ripgrep will run.
 MODE-STR The mode name as a string.
 BUFFER-FN The buffers files name."
-    (let ((symbol-lit (concat "'" symbol-str "'"))
+    (let ((symbol-lit  (prin1-to-string symbol-str))
              (glob-pat (concat
                            "--glob="
                            (sidekick--get-mode-file-glob-pattern
@@ -526,7 +527,7 @@ BUFFER-FN The buffers files name."
         (let ((rg-cmd (mapconcat 'identity
                           (list
                               (sidekick--get-rg-executable-path)
-                              args glob-pat symbol-lit path) " ")))
+                              args glob-pat "--" symbol-lit path) " ")))
             (shell-command-to-string rg-cmd))))
 
 (defun sidekick--update-symbol-occur(symbol-str buffer-fn project-dir mode-str)
@@ -542,7 +543,7 @@ MODE-STR The mode name as a string."
     (sidekick-draw-section-heading "In Buffer")
     (cd project-dir)
     (insert (sidekick--get-ripgrep-output-string
-                "-n --no-heading --no-filename --trim"
+                "-F -n --no-heading --no-filename --trim"
                 symbol-str
                 buffer-fn
                 mode-str
@@ -564,7 +565,7 @@ MODE-STR The mode name as a string."
     (sidekick-draw-section-heading "In Project")
     (cd project-dir)
     (insert (sidekick--get-ripgrep-output-string
-                "-n --heading --trim"
+                "-F -n --heading --trim"
                 symbol-str
                 "./"
                 mode-str
@@ -585,7 +586,7 @@ MODE-STR The mode name as a string."
     (sidekick-draw-section-heading "Files")
     (cd project-dir)
     (insert (sidekick--get-ripgrep-output-string
-                "-l"
+                "-F -l"
                 symbol-str
                 "./"
                 mode-str
@@ -647,7 +648,7 @@ MODE-STR The mode name as a string."
             (sidekick--update-footer)
             (goto-char (point-min))
             (sidekick-mode)
-            (highlight-regexp symbol 'highlight)))
+            (highlight-regexp (regexp-quote symbol-str) 'highlight)))
 
     ;; If we're not inside the Sidekick window, and take focus is non-nil,
     ;; select it.

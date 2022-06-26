@@ -13,9 +13,9 @@
 ------------------------------
 ```
 
-Sidekick is an **Emacs package** that's aim is to provide useful information
-about a symbol inside a single window. It's still in it's infancy, and at this
-point in time only searches for references using
+Sidekick is an **Emacs package** that's aim is to provide information about a
+symbol inside a single window. **It's still in it's infancy**, and at this point in
+time only searches for references using
 [ripgrep](https://github.com/BurntSushi/ripgrep). It will however be in active
 development and I hope to extend it in the near future to support things such as
 getting a symbols documentation and extracting other time saving information.
@@ -48,6 +48,11 @@ Clone this repository locally, and add the load path to your `.emacs`:
 ;; Maybe customize a mode's file assosiations?
 (sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
 ```
+
+#### Via Melpa
+
+**Currently unavailable**, waiting for Melpa to review this package and pull the
+recipe.
 
 ## Usage
 

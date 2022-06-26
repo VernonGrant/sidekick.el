@@ -42,7 +42,6 @@
     :group 'sidekick-search
     :type 'integer)
 
-;; TODO: optimize this.
 (defcustom sidekick-search-max-line-length 500
     "The maximum line width of a search result in columns."
     :group 'sidekick-search
@@ -58,7 +57,7 @@
     :group 'sidekick-window
     :type 'boolean)
 
-(defcustom sidekick-window-width 0.225
+(defcustom sidekick-window-width 0.3
     "The width of the Sidekick window in normalized percentage."
     :group 'sidekick-window
     :type 'float)

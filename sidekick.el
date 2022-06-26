@@ -153,7 +153,7 @@
         (define-key map "p" 'sidekick-open-previous-match)
         (define-key map (kbd "RET") 'sidekick-open-match)
         map)
-    "The local key map used for sidekick-mode.")
+    "The local key map used for `sidekick-mode'.")
 
 (defvar sidekick-mode-fonts
     `(
@@ -173,7 +173,7 @@
          ("^[-\s]\\{3\\}+\s+[-].*" . font-lock-comment-face)
          ("^[\\*\s]\\{2\\}[\\*\s]+[\\*]" . font-lock-comment-face)
          ("^[\\*\s]+[\s]+\\([a-zA-Z]+[:]\s[0-9\\.]+\\)" (1 font-lock-keyword-face)))
-    "Defines the font lock defaults for sidekick-mode.")
+    "Defines the font lock defaults for `sidekick-mode'.")
 
 (defun sidekick--deconstruct()
     "Clears Sidekick mode related variables."

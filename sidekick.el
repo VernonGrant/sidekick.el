@@ -43,7 +43,7 @@
     :type 'integer)
 
 ;; TODO: optimize this.
-(defcustom sidekick-search-max-line-length 1000
+(defcustom sidekick-search-max-line-length 500
     "The maximum line width of a search result in columns."
     :group 'sidekick-search
     :type 'integer)
@@ -88,7 +88,6 @@
          ("go-mode"         . "*.go")
          ("java-mode"       . "*.java")
          ("js-mode"         . "*.{js,es,es6}")
-         ("json-mode"       . "*.json")
          ("markdown-mode"   . "*.md")
          ("php-mode"        . "*.{php,phtml,twig}")
          ("phps-mode"       . "*.{php,phtml,twig}")
@@ -373,6 +372,14 @@ Returns a new list containing only the extracted modes from
             (setq iterator (+ iterator 1)))
         modes-list))
 
+(defun sidekick--has-mode-file-associations(mode-str)
+    "Non-nil when a mode's is found in the supported file associations list.
+
+MODE-STR The major mode name."
+    (if (member mode-str (sidekick--extract-supported-modes))
+        t
+        (progn (message "Sidekick: No file associations found for this mode!") nil)))
+
 (defun sidekick--get-mode-file-glob-pattern(mode-str buffer-fn)
     "Get the supported file glob pattern based on the mode and buffer file name.
 
@@ -381,7 +388,8 @@ Attempts to extract the mode's file globs from
 pattern, else returns the buffer file's extension, both in string
 format.
 
-MODE-STR The major mode name.  BUFFER-FN The buffers file name."
+MODE-STR The major mode name.
+BUFFER-FN The buffers file name."
     (let ((iterator 0)
              (glob-pat ""))
         (while (< iterator (length sidekick--mode-file-associations))
@@ -696,8 +704,9 @@ MODE-STR The mode name as a string."
         (sidekick--get-rg-executable-path)
         (not sidekick--state-updating)
         (> (string-width symbol) (if (< sidekick-search-minimum-symbol-length 2) 2
-        sidekick-search-minimum-symbol-length))
-        (member mode-str (sidekick--extract-supported-modes))))
+                                     sidekick-search-minimum-symbol-length))
+        ;; TODO: wrap this into a notification.
+        (sidekick--has-mode-file-associations mode-str)))
 
 (defun sidekick--trigger-update(symbol buffer-fn mode-str)
     "Triggers the Sidekick update procedure.

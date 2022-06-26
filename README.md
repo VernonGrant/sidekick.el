@@ -36,7 +36,7 @@ ripgrep](https://github.com/BurntSushi/ripgrep#installation).
 Clone this repository locally, and add the load path to your `.emacs`:
 
 ```lisp
-(add-to-list 'load-path "/path/to/sidekick/")
+(add-to-list 'load-path "/path/to/sidekick/folder/")
 (require 'sidekick)
 
 ;; Set some default bindings.
@@ -49,7 +49,7 @@ Clone this repository locally, and add the load path to your `.emacs`:
 (sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
 
 ;; On Windows, use this path format:
-;; (add-to-list 'load-path "C:\\Users\\vernon\\Documents\\sidekick.el\\")
+;; (add-to-list 'load-path "C:\\Users\\your-name\\path\\to\\sidekick\\folder\\")
 ```
 
 #### Via Melpa

@@ -14,7 +14,7 @@
 ```
 
 Sidekick is an **Emacs package** that's aim is to provide information about a
-symbol inside a single window. **It's still in it's infancy**, and at this point in
+symbol inside a single window. **It's still in its infancy**, and at this point in
 time only searches for references using
 [ripgrep](https://github.com/BurntSushi/ripgrep). It will however be in active
 development and I hope to extend it in the near future to support things such as

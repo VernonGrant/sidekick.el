@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [released]
 
+### [1.0.2] - 2022-06-26
+
+#### Added
+- Autoloading comments for testing.
+
 ### [1.0.1] - 2022-06-25
 
 #### Changed

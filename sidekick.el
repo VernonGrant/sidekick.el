@@ -342,7 +342,8 @@ MATCH-LINE-NUM The match's line number."
 
 Returns the project path if found, otherwise nil."
     (let ((dir default-directory))
-        (let ((project-root (or (locate-dominating-file dir ".sidekick")
+        (let ((project-root (or (when (fboundp 'projectile-project-root) (projectile-project-root))
+                                (locate-dominating-file dir ".sidekick")
                                 (locate-dominating-file dir ".projectile")
                                 (locate-dominating-file dir ".git"))))
             (if project-root

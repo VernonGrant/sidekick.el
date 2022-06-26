@@ -537,9 +537,10 @@ BUFFER-FN The buffers files name."
                      (number-to-string sidekick-search-max-line-length)))
              (glob-pat (concat
                            "--glob="
-                           (sidekick--get-mode-file-glob-pattern
-                               mode-str
-                               buffer-fn))))
+                           (prin1-to-string
+                               (sidekick--get-mode-file-glob-pattern
+                                   mode-str
+                                   buffer-fn)))))
         (let ((rg-cmd (mapconcat 'identity
                           (list
                               (sidekick--get-rg-executable-path)

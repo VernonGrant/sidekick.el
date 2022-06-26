@@ -166,7 +166,7 @@
          ("^\\./.*" . 'xref-file-header)
 
          ;; Line numbers.
-         ("^[0-9]+:" . 'xref-line-number)
+         ("^[0-9]+\\:" . 'xref-line-number)
 
          ;; Footer sections.
          ("^-\\{3\\}.*" . font-lock-comment-face)

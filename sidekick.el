@@ -63,10 +63,10 @@
     :type 'float)
 
 (defcustom sidekick-window-side 'right
-  "The Sidekick window position, left or right."
-  :type '(choice
-          (const :tag "Left" 'left)
-          (const :tag "Right" 'right)))
+    "The Sidekick window position, left or right."
+    :type '(choice
+               (const :tag "Left" 'left)
+               (const :tag "Right" 'right)))
 
 (defcustom sidekick-window-hide-footer nil
     "Remove the Sidekick footer branding."

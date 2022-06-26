@@ -42,6 +42,12 @@
     :group 'sidekick-search
     :type 'integer)
 
+;; TODO: optimize this.
+(defcustom sidekick-search-max-line-length 1000
+    "The maximum line width of a search result in columns."
+    :group 'sidekick-search
+    :type 'integer)
+
 (defgroup sidekick-window nil
     "Sidekick window settings."
     :group 'convenience
@@ -85,6 +91,7 @@
          ("json-mode"       . "*.json")
          ("markdown-mode"   . "*.md")
          ("php-mode"        . "*.{php,phtml,twig}")
+         ("phps-mode"       . "*.{php,phtml,twig}")
          ("python-mode"     . "*.py")
          ("ruby-mode"       . "*.rb")
          ("rust-mode"       . "*.rs")
@@ -525,7 +532,9 @@ BUFFER-FN The buffers files name."
         (let ((rg-cmd (mapconcat 'identity
                           (list
                               (sidekick--get-rg-executable-path)
-                              args glob-pat "--" symbol-lit path) " ")))
+                              args "--max-columns"
+                              (number-to-string sidekick-search-max-line-length)
+                              glob-pat "--" symbol-lit path) " ")))
             (shell-command-to-string rg-cmd))))
 
 (defun sidekick--update-symbol-occur(symbol-str buffer-fn project-dir mode-str)

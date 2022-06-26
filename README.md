@@ -120,6 +120,15 @@ A projects root directory is determined by having one of the following files.
 	(setq sidekick-search-minimum-symbol-length 3)
 	```
 
+- **sidekick-search-max-line-length:** The maximum line width of a search result
+  in columns. Useful for to limit large minified files.
+  - Type: integer
+  - Default: `500`
+  - Example:
+	```lisp
+	(setq sidekick-search-max-line-length 1000)
+	```
+
 - **sidekick-window-take-focus:** If non-nil, automatically select the sidekick
   window after every update.
   - Type: boolean
@@ -131,10 +140,10 @@ A projects root directory is determined by having one of the following files.
 
 - **sidekick-window-width:** The width of the sidekick window in normalized percentage.
   - Type: float
-  - Default: `0.225`
+  - Default: `0.3`
   - Example:
 	```lisp
-	(setq sidekick-window-width 0.3)
+	(setq sidekick-window-width 0.225)
 	```
 
 - **sidekick-window-side:** The Sidekick window position, left or right.

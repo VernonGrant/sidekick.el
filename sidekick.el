@@ -531,6 +531,10 @@ PATH The path from where ripgrep will run.
 MODE-STR The mode name as a string.
 BUFFER-FN The buffers files name."
     (let ((symbol-lit  (prin1-to-string symbol-str))
+             (line-max-col
+                 (concat
+                     "--max-columns="
+                     (number-to-string sidekick-search-max-line-length)))
              (glob-pat (concat
                            "--glob="
                            (sidekick--get-mode-file-glob-pattern
@@ -539,9 +543,8 @@ BUFFER-FN The buffers files name."
         (let ((rg-cmd (mapconcat 'identity
                           (list
                               (sidekick--get-rg-executable-path)
-                              args "--max-columns"
-                              (number-to-string sidekick-search-max-line-length)
-                              glob-pat "--" symbol-lit path) " ")))
+                              args line-max-col glob-pat
+                              "--" symbol-lit path) " ")))
             (shell-command-to-string rg-cmd))))
 
 (defun sidekick--update-symbol-occur(symbol-str buffer-fn project-dir mode-str)

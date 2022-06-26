@@ -3,7 +3,7 @@
 ;; Copyright (C) 2022 by Vernon Grant.
 
 ;; Author: Vernon Grant <vernon@ruppell.io>
-;; Version: 1.0.2
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: extensions, lisp
 ;; Homepage: https://github.com/VernonGrant/sidekick.el
@@ -259,7 +259,6 @@ MATCH-LINE-NUM The match's line number."
         (with-selected-window (get-buffer-window match-buffer)
             (progn (goto-char (point-min))))))
 
-;;;###autoload
 (defun sidekick-quit()
     "Closes the sidekick window and kill it's buffer."
     (interactive)
@@ -267,7 +266,6 @@ MATCH-LINE-NUM The match's line number."
     (quit-window)
     (kill-buffer sidekick--buffer-name))
 
-;;;###autoload
 (defun sidekick-open-previous-match()
     "Displays the previous match, creating and opening it's buffer."
     (interactive)
@@ -286,7 +284,6 @@ MATCH-LINE-NUM The match's line number."
                         match-buffer
                         match-line-num))))))
 
-;;;###autoload
 (defun sidekick-open-next-match()
     "Displays the next match, creating and opening it's buffer."
     (interactive)
@@ -305,7 +302,6 @@ MATCH-LINE-NUM The match's line number."
                         match-buffer
                         match-line-num))))))
 
-;;;###autoload
 (defun sidekick-refresh()
     "Re-runs the previous operations, refreshing the results."
     (interactive)
@@ -316,7 +312,6 @@ MATCH-LINE-NUM The match's line number."
             sidekick--state-mode-str)
         (message "Sidekick: refreshed!")))
 
-;;;###autoload
 (defun sidekick-open-match()
     "Go's directly to the match's symbol, creating a buffer if needed."
     (interactive)
@@ -513,7 +508,7 @@ TEXT The text to be centered."
                             "------------ ----    ----\n"
                             "************ ****   ****\n"
                             "----         ----  ----\n"
-                            "************ *********    Version: 1.0.2\n"
+                            "************ *********    Version: 1.0.0\n"
                             "------------ ---------    --------------\n"
                             "       ***** ****  ****\n"
                             "------------ ----   ----\n"
@@ -731,7 +726,6 @@ MODE-STR The mode name as a string."
                 project-dir
                 mode-str))))
 
-;;;###autoload
 (defun sidekick-focus()
     "Will focus on the Sidekick window, if visible."
     (interactive)
@@ -740,7 +734,6 @@ MODE-STR The mode name as a string."
             (select-window sidekick-window)
             (message "Sidekick: window not visible."))))
 
-;;;###autoload
 (defun sidekick-focus-toggle()
     "Toggle between the sidekick window and previous buffer's window."
     (interactive)
@@ -753,7 +746,6 @@ MODE-STR The mode name as a string."
                 (get-buffer-window (buffer-name)))
             (sidekick-focus))))
 
-;;;###autoload
 (defun sidekick-at-point()
     "Takes the symbol at point and triggers a Sidekick update."
     (interactive)
@@ -762,7 +754,6 @@ MODE-STR The mode name as a string."
         (buffer-file-name)
         (symbol-name major-mode)))
 
-;;;###autoload
 (defun sidekick-search-for-literal()
     "Input a literal string and triggers a Sidekick update."
     (interactive)

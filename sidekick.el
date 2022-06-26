@@ -155,9 +155,8 @@
         map)
     "The local key map used for sidekick-mode.")
 
-;; TODO: fix syntax issues.
 (defvar sidekick-mode-fonts
-    '(
+    `(
          ;; Headings.
          ("^-\\{2\\}|\s?" . 'font-lock-comment-face)
          ("^-\\{2\\}|\s.*\\(|-+\\)" (1 font-lock-comment-face))
@@ -170,10 +169,11 @@
          ("^[0-9]+:" . 'xref-line-number)
 
          ;; Footer sections.
-         ("^-\\{3\\}+" . font-lock-comment-face)
-         ("^[-\s]\\{2\\}+\s+[-]+" . font-lock-comment-face)
-         ("^[*\s]\\{2\\}+\s+[*]+" . font-lock-comment-face)
-         ("^[*\s]+[\s]+\\([a-zA-Z]+[:]\s[0-9\\.]+\\)" (1 font-lock-keyword-face)))
+         ("^-\\{3\\}.*" . font-lock-comment-face)
+         ("^[-\s]\\{3\\}+\s+[-].*" . font-lock-comment-face)
+         ("^[\\*\s]\\{2\\}[\\*\s]+[\\*]" . font-lock-comment-face)
+         ("^[\\*\s]+[\s]+\\([a-zA-Z]+[:]\s[0-9\\.]+\\)" (1 font-lock-keyword-face))
+         )
     "Defines the font lock defaults for sidekick-mode.")
 
 (defun sidekick--deconstruct()
@@ -185,7 +185,7 @@
     "Enables sidekick mode. Only used inside the Sidekick panel."
     (progn
         (setq buffer-read-only t)
-        (setq font-lock-defaults '(sidekick-mode-fonts))
+        (setq font-lock-defaults '(sidekick-mode-fonts t))
         (setq mode-line-format nil)
         (use-local-map sidekick-mode-local-map)
         (display-line-numbers-mode 0)
@@ -334,7 +334,6 @@ MATCH-LINE-NUM The match's line number."
 
 (defun sidekick--get-rg-executable-path()
     "Get the Ripgrep (rg) executable path."
-    ;; TODO: Implement operating system specific solutions.
     (let ((rg-exe (executable-find "rg")))
         (if (not rg-exe)
             (progn
@@ -705,7 +704,6 @@ MODE-STR The mode name as a string."
         (not sidekick--state-updating)
         (> (string-width symbol) (if (< sidekick-search-minimum-symbol-length 2) 2
                                      sidekick-search-minimum-symbol-length))
-        ;; TODO: wrap this into a notification.
         (sidekick--has-mode-file-associations mode-str)))
 
 (defun sidekick--trigger-update(symbol buffer-fn mode-str)

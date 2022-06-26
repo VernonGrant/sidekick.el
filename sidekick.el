@@ -227,12 +227,10 @@ Will create the buffer for the provided file path, returns the
 match's buffer on success and nil otherwise.
 
 MATCH-FILE-PATH The file path of a match."
-    (interactive)
         (let ((match-buffer nil))
             (if match-file-path
                 (setq match-buffer (find-file-noselect match-file-path nil nil))
                 (setq match-buffer (find-file-noselect sidekick--state-buffer-file-name nil nil)))
-
             (unless match-buffer
                 (message "Sidekick: Match file or buffer could not be found."))
             match-buffer))

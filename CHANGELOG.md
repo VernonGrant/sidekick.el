@@ -6,7 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2022-06-25
+## [released]
+
+### [1.0.1] - 2022-06-25
+
+#### Changed
+- Package description.
+- Accessibility of `sidekick--match-setup-buffer`.
+
+### [1.0.0] - 2022-06-25
 
 #### Added
 - Basic key bindings.

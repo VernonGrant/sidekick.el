@@ -47,6 +47,9 @@ Clone this repository locally, and add the load path to your `.emacs`:
 ;; Optional:
 ;; Maybe customize a mode's file assosiations?
 (sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
+
+;; On Windows, use this path format:
+;; (add-to-list 'load-path "C:\\Users\\vernon\\Documents\\sidekick.el\\")
 ```
 
 #### Via Melpa
@@ -156,17 +159,27 @@ The blow list specifies the default mode - file associations. **If the provided
 glob pattern is an empty string, Sidekick will just search for files with the
 same extension as the active buffer**.
 
-| Mode            | Files                 | Mode            | Files                  |
-|-----------------|-----------------------|-----------------|------------------------|
-| c++-mode        | `"*.{cpp,h,hh}"`      | markdown-mode   | `"*.md"`               |
-| c-mode          | `"*.{c,cc,h,hh}"`     | php-mode        | `"*.{php,phtml,twig}"` |
-| cperl-mode      | `"*.{pl,PL}"`         | python-mode     | `"*.py"`               |
-| css-mode        | `"*.{css,sass,scss}"` | ruby-mode       | `"*.rb"`               |
-| emacs-lisp-mode | `"*.{el,emacs}"`      | rust-mode       | `"*.rs"`               |
-| go-mode         | `"*.go"`              | typescript-mode | `"*.ts"`               |
-| java-mode       | `"*.java"`            | web-mode        | `""`                   |
-| js-mode         | `"*.{js,es,es6}"`     | xml-mode        | `"*.xml"`              |
-| json-mode       | `"*.json"`            | yaml-mode       | `"*.yml"`              |
+| Mode            | Files                  |
+|-----------------|------------------------|
+| c++-mode        | `"*.{cpp,h,hh}"`       |
+| c-mode          | `"*.{c,cc,h,hh}"`      |
+| cperl-mode      | `"*.{pl,PL}"`          |
+| css-mode        | `"*.{css,sass,scss}"`  |
+| emacs-lisp-mode | `"*.{el,emacs}"`       |
+| go-mode         | `"*.go"`               |
+| java-mode       | `"*.java"`             |
+| js-mode         | `"*.{js,es,es6}"`      |
+| json-mode       | `"*.json"`             |
+| markdown-mode   | `"*.md"`               |
+| php-mode        | `"*.{php,phtml,twig}"` |
+| phps-mode       | `"*.{php,phtml,twig}"` |
+| python-mode     | `"*.py"`               |
+| ruby-mode       | `"*.rb"`               |
+| rust-mode       | `"*.rs"`               |
+| typescript-mode | `"*.ts"`               |
+| web-mode        | `""`                   |
+| xml-mode        | `"*.xml"`              |
+| yaml-mode       | `"*.yml"`              |
 
 To add or update an existing mode's file associations, the following helper
 function has been provided. See the below usage example:

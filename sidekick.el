@@ -1,9 +1,9 @@
-;;; sidekick.el --- A coding assistance panel  -*- lexical-binding: t -*-
+;;; sidekick.el --- Provides information about a symbol inside a side window  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2022 by Vernon Grant.
 
 ;; Author: Vernon Grant <vernon@ruppell.io>
-;; Version: 1.0.0
+;; Version: 1.0.1
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: extensions, lisp
 ;; Homepage: https://github.com/VernonGrant/sidekick.el
@@ -510,7 +510,7 @@ TEXT The text to be centered."
                             "------------ ----    ----\n"
                             "************ ****   ****\n"
                             "----         ----  ----\n"
-                            "************ *********    Version: 1.0.0\n"
+                            "************ *********    Version: 1.0.1\n"
                             "------------ ---------    --------------\n"
                             "       ***** ****  ****\n"
                             "------------ ----   ----\n"

@@ -169,7 +169,6 @@ same extension as the active buffer**.
 | go-mode         | `"*.go"`               |
 | java-mode       | `"*.java"`             |
 | js-mode         | `"*.{js,es,es6}"`      |
-| json-mode       | `"*.json"`             |
 | markdown-mode   | `"*.md"`               |
 | php-mode        | `"*.{php,phtml,twig}"` |
 | phps-mode       | `"*.{php,phtml,twig}"` |

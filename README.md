@@ -179,6 +179,7 @@ same extension as the active buffer**.
 | java-mode       | `"*.java"`             |
 | js-mode         | `"*.{js,es,es6}"`      |
 | markdown-mode   | `"*.md"`               |
+| text-mode       | `"*.txt"`              |
 | php-mode        | `"*.{php,phtml,twig}"` |
 | phps-mode       | `"*.{php,phtml,twig}"` |
 | python-mode     | `"*.py"`               |

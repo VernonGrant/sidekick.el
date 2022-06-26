@@ -172,8 +172,7 @@
          ("^-\\{3\\}.*" . font-lock-comment-face)
          ("^[-\s]\\{3\\}+\s+[-].*" . font-lock-comment-face)
          ("^[\\*\s]\\{2\\}[\\*\s]+[\\*]" . font-lock-comment-face)
-         ("^[\\*\s]+[\s]+\\([a-zA-Z]+[:]\s[0-9\\.]+\\)" (1 font-lock-keyword-face))
-         )
+         ("^[\\*\s]+[\s]+\\([a-zA-Z]+[:]\s[0-9\\.]+\\)" (1 font-lock-keyword-face)))
     "Defines the font lock defaults for sidekick-mode.")
 
 (defun sidekick--deconstruct()
@@ -189,6 +188,7 @@
         (setq mode-line-format nil)
         (use-local-map sidekick-mode-local-map)
         (display-line-numbers-mode 0)
+        (toggle-truncate-lines 1)
         (run-hooks 'sidekick-mode-hook)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,7 +251,6 @@ MATCH-LINE-NUM The match's line number."
             (progn
                 (goto-char (point-min))
                 (forward-line (1- match-line-num))
-                ;;
                 (re-search-forward (regexp-quote sidekick--state-symbol-str) nil t)
                 (re-search-backward (regexp-quote sidekick--state-symbol-str) nil t)
                 (recenter))))
@@ -337,7 +336,7 @@ MATCH-LINE-NUM The match's line number."
     (let ((rg-exe (executable-find "rg")))
         (if (not rg-exe)
             (progn
-                (error "Sidekick: ripgrep (rg) executable could not be found!") nil)
+                (message "Sidekick: ripgrep (rg) executable could not be found!") nil)
             rg-exe)))
 
 (defun sidekick--get-project-root-path()
@@ -350,7 +349,7 @@ Returns the project path if found, otherwise nil."
                                 (locate-dominating-file dir ".git"))))
             (if project-root
                 project-root
-                (progn (error "Sidekick: Project root directory not found") nil)))))
+                (progn (message "Sidekick: Project root directory not found!") nil)))))
 
 (defun sidekick--get-window-width()
     "Get the Sidekick window width in columns."

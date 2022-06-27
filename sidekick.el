@@ -356,10 +356,10 @@ Returns the project path if found, otherwise nil."
             (window-width sidekick-win) (+ 80))))
 
 (defun sidekick--extract-supported-modes()
-    "Extracts all supported modes from 'sidekick--mode-file-associations'.
+    "Extracts all supported modes from `sidekick--mode-file-associations'.
 
 Returns a new list containing only the extracted modes from
-'sidekick--mode-file-associations'."
+`sidekick--mode-file-associations'."
     (let ((iterator 0)
              (modes-list nil))
         (while (< iterator (length sidekick--mode-file-associations))
@@ -380,7 +380,7 @@ MODE-STR The major mode name."
     "Get the supported file glob pattern based on the mode and buffer file name.
 
 Attempts to extract the mode's file globs from
-'sidekick--mode-file-associations'.  If found, returns the glob
+`sidekick--mode-file-associations'.  If found, returns the glob
 pattern, else returns the buffer file's extension, both in string
 format.
 
@@ -425,7 +425,7 @@ SIDEKICK-BUF The sidekick buffer, will handle nil values."
 
 If a mode already exists, it's glob pattern get's replaced.  If
 no matching mode was found, it will be added to the
-'sidekick--mode-file-associations' list.
+`sidekick--mode-file-associations' list.
 
 MODE-STR The mode name as a string.
 GLOBS The glob pattern as a string."
@@ -617,7 +617,7 @@ MODE-STR The mode name as a string."
 
 This function handle the entire Sidekick update procedure.
 
-SYMBOL The raw symbol from 'thing-at-point'.
+SYMBOL The raw symbol from `thing-at-point'.
 SYMBOL-STR The symbol without text properties, string format.
 BUFFER-FN The buffers files name.
 PROJECT-DIR The projects root directory path.
@@ -689,11 +689,11 @@ following conditions apply:
 needs to be successfully detected.  3. The ripgrep executable
 must be available.  4. Sidekick should not already be in the
 state of updating.  5. The symbol length must be more then the
-minimum specified with 'sidekick-search-minimum-symbol-length'.
+minimum specified with `sidekick-search-minimum-symbol-length'.
 6. The buffers mode name needs to be inside the
-'sidekick--mode-file-associations' list.
+`sidekick--mode-file-associations' list.
 
-SYMBOL The raw symbol from 'thing-at-point'.
+SYMBOL The raw symbol from `thing-at-point'.
 BUFFER-FN The buffers files name.
 PROJECT-DIR The projects root directory path.
 MODE-STR The mode name as a string."
@@ -710,11 +710,11 @@ MODE-STR The mode name as a string."
 (defun sidekick--trigger-update(symbol buffer-fn mode-str)
     "Triggers the Sidekick update procedure.
 
-Wrapper function for 'sidekick--update', makes sure that all
-prerequisites specified in 'sidekick--should-update' has been
+Wrapper function for `sidekick--update', makes sure that all
+prerequisites specified in `sidekick--should-update' has been
 met.
 
-SYMBOL The raw symbol from 'thing-at-point'.
+SYMBOL The raw symbol from `thing-at-point'.
 BUFFER-FN The buffers files name.
 MODE-STR The mode name as a string."
     (let ((project-dir (sidekick--get-project-root-path)))

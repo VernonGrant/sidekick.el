@@ -7,15 +7,15 @@
 ;; Created: June 26, 2022
 ;; Modified: June 26, 2022
 ;; Version: 0.0.1
-;; Keywords: abbrev bib c calendar comm convenience data docs emulations extensions faces files frames games hardware help hypermedia i18n internal languages lisp local maint mail matching mouse multimedia news outlines processes terminals tex tools unix vc wp
-;; Homepage: https://github.com/Consoleaf/sidekick-evil
+;; Keywords: extensions, lisp, evil
+;; Homepage: https://github.com/VernonGrant/sidekick.el
 ;; Package-Requires: ((emacs "24.3"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
 ;;; Commentary:
 ;;
-;;  Description
+;;  `sidekick-evil' provides integration for `sidekick' with `evil-mode'
 ;;
 ;;; Code:
 

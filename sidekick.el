@@ -5,7 +5,7 @@
 ;; Author: Vernon Grant <vernon@ruppell.io>
 ;; Version: 1.0.0
 ;; Package-Requires: ((emacs "26.1"))
-;; Keywords: extensions, lisp
+;; Keywords: search, references, ripgrep, package, sidekick
 ;; Homepage: https://github.com/VernonGrant/sidekick.el
 
 ;; This program is free software: you can redistribute it and/or modify

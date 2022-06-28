@@ -36,8 +36,11 @@ ripgrep](https://github.com/BurntSushi/ripgrep#installation).
 Clone this repository locally, and add the load path to your `.emacs`:
 
 ```lisp
-(add-to-list 'load-path "/path/to/sidekick/folder/")
+(add-to-list 'load-path "/path/to/sidekick.el/folder/")
 (require 'sidekick)
+
+;; If your part of the dark side (Evil User), uncomment this:
+;; (with-eval-after-load 'sidekick (require 'sidekick-evil))
 
 ;; Set some default bindings.
 (global-set-key (kbd "C-c k") 'sidekick-at-point)
@@ -48,14 +51,9 @@ Clone this repository locally, and add the load path to your `.emacs`:
 ;; Maybe customize a mode's file assosiations?
 (sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
 
-;; On Windows, use this path format:
-;; (add-to-list 'load-path "C:\\Users\\your-name\\path\\to\\sidekick\\folder\\")
+;; Note, on Windows, use this path format:
+;; (add-to-list 'load-path "C:\\Users\\your-name\\path\\to\\sidekick.el\\folder\\")
 ```
-
-#### Via Melpa
-
-**Currently unavailable**, waiting for Melpa to review this package and pull the
-recipe.
 
 ## Usage
 
@@ -99,17 +97,7 @@ example:
 (global-set-key (kbd "C-c C-k") 'sidekick-search-for-literal)
 ```
 
-#### Evil
-
-[Evil-mode](https://github.com/emacs-evil/evil) integration is provided by `sidekick-evil`.
-Load it with:
-
-``` emacs-lisp
-(with-eval-after-load 'sidekick
-    (require 'sidekick-evil))
-```
-
-##### Evil Bindings
+#### Evil key bindings
 
 | Key   | Command                          | Description                                              |
 |-------|----------------------------------|----------------------------------------------------------|
@@ -118,6 +106,14 @@ Load it with:
 | `n`   | **sidekick-open-next-match**     | Displays the next match.                                 |
 | `N`   | **sidekick-open-previous-match** | Displays the previous match.                             |
 | `RET` | **sidekick-open-match**          | Go's directly to the matched symbol.                     |
+
+[Evil-mode](https://github.com/emacs-evil/evil) integration is provided by
+`sidekick-evil`. Use the following to load it:
+
+``` lisp
+;; Add this line after (require 'sidekick).
+(with-eval-after-load 'sidekick (require 'sidekick-evil))
+```
 
 ## Configuration
 

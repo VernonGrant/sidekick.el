@@ -222,6 +222,7 @@ function has been provided. See the below usage example:
 The following tools and educational resources where invaluable during the
 development of this package.
 
+- [Contributors](https://github.com/VernonGrant/sidekick.el/blob/main/CONTRIBUTORS.md)
 - [Free Software Foundation](https://www.fsf.org/)
 - Xah Lee, author of [Xah Emacs Tutorial](http://xahlee.info/emacs/index.html)
 - Mickey Petersen, author of [Mastering Emacs](https://www.masteringemacs.org/)

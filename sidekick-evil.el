@@ -9,7 +9,7 @@
 ;; Version: 0.0.1
 ;; Keywords: extensions, lisp, evil
 ;; Homepage: https://github.com/VernonGrant/sidekick.el
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "26.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;

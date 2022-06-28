@@ -99,6 +99,26 @@ example:
 (global-set-key (kbd "C-c C-k") 'sidekick-search-for-literal)
 ```
 
+#### Evil
+
+[Evil-mode](https://github.com/emacs-evil/evil) integration is provided by `sidekick-evil`.
+Load it with:
+
+``` emacs-lisp
+(with-eval-after-load 'sidekick
+    (require 'sidekick-evil))
+```
+
+##### Evil Bindings
+
+| Key   | Command                          | Description                                              |
+|-------|----------------------------------|----------------------------------------------------------|
+| `q`   | **sidekick-quit**                | Closes the Sidekick window and kills it's buffer.        |
+| `g`   | **sidekick-refresh**             | Re-runs the previous operations, refreshing the results. |
+| `n`   | **sidekick-open-next-match**     | Displays the next match.                                 |
+| `N`   | **sidekick-open-previous-match** | Displays the previous match.                             |
+| `RET` | **sidekick-open-match**          | Go's directly to the matched symbol.                     |
+
 ## Configuration
 
 #### How the projects root directory is determined

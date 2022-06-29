@@ -10,11 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 1.1.0 -
 
 #### Added
+- Default file associations for `json-mode`.
 - Default file associations for `scss-mode`.
 - Get's a projects root path from projectile.
 - Evil integration.
 
 #### Fixed
+- Default file associations for `css-mode`.
+- Default file associations for `nxml-mode`.
 - Removed needless quotes.
 - Use `` `...' `` for variables/functions in docstrings.
 - Typo in README.

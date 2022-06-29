@@ -88,6 +88,7 @@
          ("go-mode"         . "*.go")
          ("java-mode"       . "*.java")
          ("js-mode"         . "*.{js,es,es6}")
+         ("json-mode"       . "*.json")
          ("markdown-mode"   . "*.md")
          ("text-mode"       . "*.txt")
          ("php-mode"        . "*.{php,phtml,twig}")
@@ -99,7 +100,7 @@
          ;; Empty string, signifies using the current file's extension if
          ;; available.
          ("web-mode"        . "")
-         ("xml-mode"        . "*.xml")
+         ("nxml-mode"       . "*.{xml,xml.dist}")
          ("yaml-mode"       . "*.yml"))
     "Association List holding major mode file associations.")
 

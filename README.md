@@ -50,8 +50,12 @@ Clone this repository locally, and add the load path to your `.emacs`:
 ;; Optional:
 ;; Maybe customize a mode's file assosiations?
 (sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
+(sidekick-set-file-associations "web-mode" "*.{php,html,scss,sass}")
+;; Maybe, stop sickick from taking focus away from current buffer.
+(setq sidekick-window-take-focus nil)
 
-;; Note, on Windows, use this path format:
+;; Notes:
+;; On Windows, use this path format:
 ;; (add-to-list 'load-path "C:\\Users\\your-name\\path\\to\\sidekick.el\\folder\\")
 ```
 
@@ -189,11 +193,13 @@ same extension as the active buffer**.
 | c++-mode        | `"*.{cpp,h,hh}"`       |
 | c-mode          | `"*.{c,cc,h,hh}"`      |
 | cperl-mode      | `"*.{pl,PL}"`          |
-| css-mode        | `"*.{css,sass,scss}"`  |
+| css-mode        | `"*.css"`              |
+| scss-mode       | `"*.{css,sass,scss}"`  |
 | emacs-lisp-mode | `"*.{el,emacs}"`       |
 | go-mode         | `"*.go"`               |
 | java-mode       | `"*.java"`             |
 | js-mode         | `"*.{js,es,es6}"`      |
+| json-mode       | `"*.json"`             |
 | markdown-mode   | `"*.md"`               |
 | text-mode       | `"*.txt"`              |
 | php-mode        | `"*.{php,phtml,twig}"` |
@@ -203,7 +209,7 @@ same extension as the active buffer**.
 | rust-mode       | `"*.rs"`               |
 | typescript-mode | `"*.ts"`               |
 | web-mode        | `""`                   |
-| xml-mode        | `"*.xml"`              |
+| nxml-mode       | `"*.{xml,xml.dist}"`   |
 | yaml-mode       | `"*.yml"`              |
 
 To add or update an existing mode's file associations, the following helper
@@ -214,7 +220,7 @@ function has been provided. See the below usage example:
 (sidekick-set-file-associations "example-mode" "*.{exam,examp}")
 
 ;; Replace an existing mode's file globs.
-(sidekick-set-file-associations "php-mode" "*.{php,blade,twig}")
+(sidekick-set-file-associations "web-mode" "*.{php,html,scss,sass}")
 ```
 
 ## Credits

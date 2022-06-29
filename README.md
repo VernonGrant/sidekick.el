@@ -51,8 +51,9 @@ Clone this repository locally, and add the load path to your `.emacs`:
 ;; Maybe customize a mode's file assosiations?
 (sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
 (sidekick-set-file-associations "web-mode" "*.{php,html,scss,sass}")
-;; Maybe, stop sickick from taking focus away from current buffer.
-(setq sidekick-window-take-focus nil)
+
+;; Maybe, make sidekick take focus after update?
+;; (setq sidekick-window-take-focus t)
 
 ;; Notes:
 ;; On Windows, use this path format:
@@ -152,10 +153,10 @@ A projects root directory is determined by having one of the following files.
 - **sidekick-window-take-focus:** If non-nil, automatically select the sidekick
   window after every update.
   - Type: boolean
-  - Default: `t`
+  - Default: `nil`
   - Example:
 	```lisp
-	(setq sidekick-window-take-focus nil)
+	(setq sidekick-window-take-focus t)
 	```
 
 - **sidekick-window-width:** The width of the sidekick window in normalized percentage.

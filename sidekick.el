@@ -52,7 +52,7 @@
     :group 'convenience
     :prefix "sidekick-window-")
 
-(defcustom sidekick-window-take-focus t
+(defcustom sidekick-window-take-focus nil
     "If non-nil, automatically select the sidekick window after every update."
     :group 'sidekick-window
     :type 'boolean)

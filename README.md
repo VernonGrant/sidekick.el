@@ -185,9 +185,10 @@ A projects root directory is determined by having one of the following files.
 
 #### Modifying a mode's associated files
 
-The blow list specifies the default mode - file associations. **If the provided
-glob pattern is an empty string, Sidekick will just search for files with the
-same extension as the active buffer**.
+The blow list specifies the default mode - **file associations**. These
+associations **allow you to search for specific file types on a per mode
+basis**. For example, if your using `web-mode` for HTML files, it might also be
+useful to search for a symbol inside `SCSS` and `Javascirpt` files.
 
 | Mode            | Files                  |
 |-----------------|------------------------|
@@ -213,8 +214,10 @@ same extension as the active buffer**.
 | nxml-mode       | `"*.{xml,xml.dist}"`   |
 | yaml-mode       | `"*.yml"`              |
 
-To add or update an existing mode's file associations, the following helper
-function has been provided. See the below usage example:
+**If the provided glob pattern is an empty string, Sidekick will just search for
+files with the same extension as the active buffer's file**. To add or update an
+existing mode's file associations, the following helper function has been
+provided. See the below usage example:
 
 ```lisp
 ;; Adds a new mode, glob pair.

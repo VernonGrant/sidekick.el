@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default file associations for `scss-mode`.
 - Get's a projects root path from projectile.
 - Evil integration.
+- Explanation for mode file associations.
 
 #### Fixed
 - Default file associations for `css-mode`.

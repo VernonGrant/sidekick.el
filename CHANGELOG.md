@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Explanation for mode file associations.
 
 #### Fixed
+- Bug related to dollar signs in symbol strings.
 - Default file associations for `css-mode`.
 - Default file associations for `nxml-mode`.
 - Removed needless quotes.

@@ -523,7 +523,6 @@ TEXT The text to be centered."
 (defun sidekick--escape-shell-command-string(command-string)
     "Escape special characters inside the provided shell command string.
 COMMAND-STRING The shell command."
-    ;; Escape dollar signs.
     (replace-regexp-in-string "\\$" "\\$" command-string nil t))
 
 (defun sidekick--get-ripgrep-output-string(args symbol-str path mode-str buffer-fn)

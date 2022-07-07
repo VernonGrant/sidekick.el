@@ -520,6 +520,12 @@ TEXT The text to be centered."
             (sidekick-draw-text-centerd logo-str))
         (sidekick-draw-separator)))
 
+(defun sidekick--escape-shell-command-string(command-string)
+    "Escape special characters inside the provided shell command string.
+COMMAND-STRING The shell command."
+    ;; Escape dollar signs.
+    (replace-regexp-in-string "\\$" "\\$" command-string nil t))
+
 (defun sidekick--get-ripgrep-output-string(args symbol-str path mode-str buffer-fn)
     "Run ripgrep and return a string containing the output.
 
@@ -547,7 +553,7 @@ BUFFER-FN The buffers files name."
                               (sidekick--get-rg-executable-path)
                               args line-max-col glob-pat
                               "--" symbol-lit path) " ")))
-            (shell-command-to-string rg-cmd))))
+            (shell-command-to-string (sidekick--escape-shell-command-string rg-cmd)))))
 
 (defun sidekick--update-symbol-occur(symbol-str buffer-fn project-dir mode-str)
     "Show all occurrences of symbol in the current active buffer.

@@ -665,14 +665,12 @@ PROJECT-DIR The projects root directory path.
 MODE-STR The mode name as a string."
     (sidekick-draw-section-heading "Documentation")
 
-    (cd project-dir)
-    (insert (sidekick--get-ripgrep-output-string
-                "-F -l"
-                symbol-str
-                "./"
-                mode-str
-                buffer-fn))
-    (insert "\n"))
+    ;; TODO: Check if eldoc is enabled first.
+
+    ;; Insert eldoc buffer output.
+    (let ((doc-buf (eldoc-doc-buffer)))
+        (when doc-buf
+            (insert-buffer-substring doc-buf))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
@@ -731,6 +729,7 @@ MODE-STR The mode name as a string."
             (sidekick--update-symbol-files
                 symbol-str buffer-fn project-dir mode-str)
 
+            ;; TODO: Check if eldoc is enabled first.
             ;; Show documentation.
             (sidekick--update-eldoc
                 symbol-str buffer-fn project-dir mode-str)

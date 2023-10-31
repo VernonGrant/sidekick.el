@@ -328,9 +328,9 @@ MATCH-LINE-NUM The match's line number."
             (print match-line-and-path)
             (let ((match-buffer (sidekick--match-setup-buffer (nth 1 match-line-and-path)))
                      (match-line-num (nth 0 match-line-and-path)))
-                ;; Display the matches buffer.
+
                 ;; (switch-to-buffer match-buffer nil t)
-                (switch-to-buffer match-buffer)
+                (switch-to-buffer-other-window match-buffer)
 
                 ;; Go to line number.
                 (sidekick--match-buffer-operations match-buffer match-line-num)))))
@@ -670,7 +670,8 @@ MODE-STR The mode name as a string."
     ;; Insert eldoc buffer output.
     (let ((doc-buf (eldoc-doc-buffer)))
         (when doc-buf
-            (insert-buffer-substring doc-buf))))
+            (insert-buffer-substring doc-buf)))
+    (insert "\n\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;

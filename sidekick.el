@@ -37,7 +37,7 @@
     :group 'convenience
     :prefix "sidekick-search-")
 
-(defcustom sidekick-search-minimum-symbol-length 2
+(defcustom sidekick-search-minimum-symbol-length 3
     "The minimum symbol / term length in order for Sidekick to update."
     :group 'sidekick-search
     :type 'integer)
@@ -52,21 +52,21 @@
     :group 'convenience
     :prefix "sidekick-window-")
 
-(defcustom sidekick-window-take-focus nil
-    "If non-nil, automatically select the sidekick window after every update."
-    :group 'sidekick-window
-    :type 'boolean)
+;; (defcustom sidekick-window-take-focus nil
+;;     "If non-nil, automatically select the sidekick window after every update."
+;;     :group 'sidekick-window
+;;     :type 'boolean)
 
-(defcustom sidekick-window-width 0.3
-    "The width of the Sidekick window in normalized percentage."
-    :group 'sidekick-window
-    :type 'float)
+;; (defcustom sidekick-window-width 0.3
+;;     "The width of the Sidekick window in normalized percentage."
+;;     :group 'sidekick-window
+;;     :type 'float)
 
-(defcustom sidekick-window-side 'right
-    "The Sidekick window position, left or right."
-    :type '(choice
-               (const :tag "Left" left)
-               (const :tag "Right" right)))
+;; (defcustom sidekick-window-side 'right
+;;     "The Sidekick window position, left or right."
+;;     :type '(choice
+;;                (const :tag "Left" left)
+;;                (const :tag "Right" right)))
 
 (defcustom sidekick-window-hide-footer nil
     "Remove the Sidekick footer branding."
@@ -77,6 +77,7 @@
 ;; Private Variables ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
+;; NOTE: Switch away from ripgrep and use plain grep.
 (defvar sidekick--mode-file-associations
     `(
          ("c++-mode"        . "*.{cpp,h,hh}")
@@ -151,8 +152,8 @@
     (let ((map (make-sparse-keymap)))
         (define-key map "q" 'sidekick-quit)
         (define-key map "g" 'sidekick-refresh)
-        (define-key map "n" 'sidekick-open-next-match)
-        (define-key map "p" 'sidekick-open-previous-match)
+        (define-key map "n" 'sidekick-next-match)
+        (define-key map "p" 'sidekick-previous-match)
         (define-key map (kbd "RET") 'sidekick-open-match)
         map)
     "The local key map used for `sidekick-mode'.")
@@ -197,30 +198,32 @@
 ;; Sidekick Keymap Interactions ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Better optimize this function.
 (defun sidekick--match-get-line-and-path()
     "Get's a match's line number and file path, inside of Sidekick Window."
     (let ((match-line-num nil)
              (match-file-path nil))
-        ;; Extract the line number of the match.
-        (when (string-match sidekick--match-line-number-regexp (thing-at-point 'line t))
-            (setq match-line-num
-                (string-to-number (match-string 0 (thing-at-point 'line t)))))
 
-        ;; NOTE: Optimize this in future release.
-        ;; Find and extract the match's file path.
-        (save-excursion
-            ;; Will move up until a file path is found.
-            (unless (string-match sidekick--match-file-path-regexp (thing-at-point 'line t))
-                (while (and (> (string-width (thing-at-point 'line t)) 0)
-                           (> (line-number-at-pos (point)) 1))
-                    (forward-line -1))
-                (forward-line))
+        (let ((cur-line (thing-at-point 'line t)))
+            (when (string-match sidekick--match-line-number-regexp cur-line)
+                (setq match-line-num (string-to-number (match-string 0 cur-line)))
 
-            (when (string-match sidekick--match-file-path-regexp (thing-at-point 'line t))
-                (setq match-file-path  (buffer-substring-no-properties
-                                           (line-beginning-position)
-                                           (line-end-position)))))
-        (list match-line-num match-file-path)))
+                ;; NOTE: Optimize this in future release.
+                ;; Find and extract the match's file path.
+                (save-excursion
+                    ;; Will move up until a file path is found.
+                    (unless (string-match sidekick--match-file-path-regexp cur-line)
+                        (while (and (> (string-width (thing-at-point 'line t)) 0)
+                                   (> (line-number-at-pos (point)) 1))
+                            (forward-line -1))
+                        (forward-line))
+
+                    (when (string-match sidekick--match-file-path-regexp (thing-at-point 'line t))
+                        (setq match-file-path  (buffer-substring-no-properties
+                                                   (line-beginning-position)
+                                                   (line-end-position)))))
+
+                (list match-line-num match-file-path)))))
 
 (defun sidekick--match-setup-buffer(match-file-path)
     "Find the match's file and create it's buffer.
@@ -268,7 +271,7 @@ MATCH-LINE-NUM The match's line number."
     (quit-window)
     (kill-buffer sidekick--buffer-name))
 
-(defun sidekick-open-previous-match()
+(defun sidekick-previous-match()
     "Displays the previous match, creating and opening it's buffer."
     (interactive)
     (when (string= (buffer-name) sidekick--buffer-name)
@@ -286,7 +289,7 @@ MATCH-LINE-NUM The match's line number."
                         match-buffer
                         match-line-num))))))
 
-(defun sidekick-open-next-match()
+(defun sidekick-next-match()
     "Displays the next match, creating and opening it's buffer."
     (interactive)
     (when (string= (buffer-name) sidekick--buffer-name)
@@ -294,6 +297,9 @@ MATCH-LINE-NUM The match's line number."
         (let ((match-line-and-path (sidekick--match-get-line-and-path)))
             (let ((match-buffer (sidekick--match-setup-buffer (nth 1 match-line-and-path)))
                      (match-line-num (nth 0 match-line-and-path)))
+
+                (message (buffer-file-name match-buffer))
+                (message (int-to-string match-line-num))
 
                 ;; Display the match's buffer.
                 (display-buffer-use-some-window match-buffer `())
@@ -319,9 +325,11 @@ MATCH-LINE-NUM The match's line number."
     (interactive)
     (when (string= (buffer-name) sidekick--buffer-name)
         (let ((match-line-and-path (sidekick--match-get-line-and-path)))
+            (print match-line-and-path)
             (let ((match-buffer (sidekick--match-setup-buffer (nth 1 match-line-and-path)))
                      (match-line-num (nth 0 match-line-and-path)))
                 ;; Display the matches buffer.
+                ;; (switch-to-buffer match-buffer nil t)
                 (switch-to-buffer match-buffer)
 
                 ;; Go to line number.
@@ -404,25 +412,52 @@ BUFFER-FN The buffers file name."
             (setq iterator (+ iterator 1)))
         glob-pat))
 
+;; (defun sidekick--handle-window-creation(sidekick-buf)
+;;     "Handles the creation of the Sidekick window.
+
+;; Only create the Sidekick window if it does not already exist.
+
+;; SIDEKICK-BUF The sidekick buffer, will handle nil values."
+;;     (unless (get-buffer-window sidekick-buf t)
+;;         ;; Define default window properties.
+;;         (let ((buf-window-alist `(
+;;                                      (dedicated . t)
+;;                                      (slot . -1)
+;;                                      (side . left)
+;;                                      (window-width . 0.25)
+;;                                      (window-parameters . ((no-delete-other-windows . t))))))
+
+;;             ;; Set custom window properties.
+;;             (setf (alist-get 'window-width buf-window-alist) sidekick-window-width)
+;;             (setf (alist-get 'side buf-window-alist) sidekick-window-side)
+;;             (display-buffer-in-side-window sidekick-buf buf-window-alist))))
+
 (defun sidekick--handle-window-creation(sidekick-buf)
     "Handles the creation of the Sidekick window.
 
 Only create the Sidekick window if it does not already exist.
 
 SIDEKICK-BUF The sidekick buffer, will handle nil values."
+    (message (get-buffer-window sidekick-buf t))
     (unless (get-buffer-window sidekick-buf t)
         ;; Define default window properties.
         (let ((buf-window-alist `(
                                      (dedicated . t)
-                                     (slot . -1)
-                                     (side . left)
-                                     (window-width . 0.25)
-                                     (window-parameters . ((no-delete-other-windows . t))))))
+                                     ;; (inhibit-same-window . t)
+                                     ;; (slot . -1)
+                                     ;; (side . left)
+                                     ;; (window-width . 0.25)
+                                     ;; (window-parameters . ((no-delete-other-windows . t)))
+                                     )))
 
             ;; Set custom window properties.
-            (setf (alist-get 'window-width buf-window-alist) sidekick-window-width)
-            (setf (alist-get 'side buf-window-alist) sidekick-window-side)
-            (display-buffer-in-side-window sidekick-buf buf-window-alist))))
+            ;; (setf (alist-get 'window-width buf-window-alist) sidekick-window-width)
+            ;; (setf (alist-get 'side buf-window-alist) sidekick-window-side)
+            ;; (display-buffer-in-side-window sidekick-buf buf-window-alist)
+            ;; Maybe we need to check if the buffer is visable?
+            ;; (display-buffer-reuse-window sidekick-buf buf-window-alist)
+            (display-buffer-same-window sidekick-buf buf-window-alist)
+            )))
 
 (defun sidekick-set-file-associations(mode-str globs)
     "Add new, or update existing major mode file associations.
@@ -617,6 +652,28 @@ MODE-STR The mode name as a string."
                 buffer-fn))
     (insert "\n"))
 
+(defun sidekick--update-eldoc(symbol-str buffer-fn project-dir mode-str)
+    "Find all files containing the symbol, or term.
+
+Will use ripgrep to search the current projects for files
+containing a symbol.  These files must match the mode's glob
+pattern.
+
+SYMBOL-STR The symbol without text properties, string format.
+BUFFER-FN The buffers files name.
+PROJECT-DIR The projects root directory path.
+MODE-STR The mode name as a string."
+    (sidekick-draw-section-heading "Documentation")
+
+    (cd project-dir)
+    (insert (sidekick--get-ripgrep-output-string
+                "-F -l"
+                symbol-str
+                "./"
+                mode-str
+                buffer-fn))
+    (insert "\n"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -656,7 +713,8 @@ MODE-STR The mode name as a string."
             (setq sidekick-buf (get-buffer-create sidekick--buffer-name)))
 
         ;; Handle window creation.
-        (sidekick--handle-window-creation sidekick-buf))
+        ;; (sidekick--handle-window-creation sidekick-buf)
+        )
 
     ;; Perform sidekick buffer operations.
     (with-current-buffer sidekick--buffer-name
@@ -667,8 +725,16 @@ MODE-STR The mode name as a string."
                 symbol-str buffer-fn project-dir mode-str)
             (sidekick--update-symbol-references
                 symbol-str buffer-fn project-dir mode-str)
+
+            ;; TODO: add more features here.
+            ;; TODO: Maybe remove files.
             (sidekick--update-symbol-files
                 symbol-str buffer-fn project-dir mode-str)
+
+            ;; Show documentation.
+            (sidekick--update-eldoc
+                symbol-str buffer-fn project-dir mode-str)
+
             (sidekick--update-footer)
             (goto-char (point-min))
             (sidekick-mode)
@@ -677,8 +743,7 @@ MODE-STR The mode name as a string."
     ;; If we're not inside the Sidekick window, and take focus is non-nil,
     ;; select it.
     (unless (string= (buffer-name) sidekick--buffer-name)
-        (when sidekick-window-take-focus
-            (switch-to-buffer-other-window sidekick--buffer-name)))
+        (switch-to-buffer-other-window sidekick--buffer-name))
 
     ;; Enable future update calls.
     (setq sidekick--state-updating nil))

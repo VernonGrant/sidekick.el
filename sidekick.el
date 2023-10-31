@@ -720,8 +720,16 @@ MODE-STR The mode name as a string."
         (progn
             (sidekick--deconstruct)
             (erase-buffer)
+            ;; TODO: Check if eldoc is enabled first.
+            ;; Show documentation.
+            (sidekick--update-eldoc
+                symbol-str buffer-fn project-dir mode-str)
+
+            ;; TODO: Add xref.
+
             (sidekick--update-symbol-occur
                 symbol-str buffer-fn project-dir mode-str)
+
             (sidekick--update-symbol-references
                 symbol-str buffer-fn project-dir mode-str)
 
@@ -730,10 +738,7 @@ MODE-STR The mode name as a string."
             (sidekick--update-symbol-files
                 symbol-str buffer-fn project-dir mode-str)
 
-            ;; TODO: Check if eldoc is enabled first.
-            ;; Show documentation.
-            (sidekick--update-eldoc
-                symbol-str buffer-fn project-dir mode-str)
+
 
             (sidekick--update-footer)
             (goto-char (point-min))

@@ -3,9 +3,9 @@
 ;; Copyright (C) 2022 by Vernon Grant.
 
 ;; Author: Vernon Grant <vernon@ruppell.io>
-;; Version: 1.0.0
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "26.1"))
-;; Keywords: search, references, ripgrep, package, sidekick
+;; Keywords: search, references, grep, package, sidekick
 ;; Homepage: https://github.com/VernonGrant/sidekick.el
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Sidekick is a Emacs package that's aim is to provide information about a
+;; Sidekick is a Emacs package that's aim is to provide general information about a
 ;; symbol inside a single window.
 
 ;;; Code:
@@ -47,26 +47,16 @@
     :group 'sidekick-search
     :type 'integer)
 
+;; TODO: Implement this.
+(defcustom sidekick-search-case-insensitive t
+    "Should sidekick searches be case insensitve."
+    :group 'sidekick-search
+    :type 'boolean)
+
 (defgroup sidekick-window nil
     "Sidekick window settings."
     :group 'convenience
     :prefix "sidekick-window-")
-
-;; (defcustom sidekick-window-take-focus nil
-;;     "If non-nil, automatically select the sidekick window after every update."
-;;     :group 'sidekick-window
-;;     :type 'boolean)
-
-;; (defcustom sidekick-window-width 0.3
-;;     "The width of the Sidekick window in normalized percentage."
-;;     :group 'sidekick-window
-;;     :type 'float)
-
-;; (defcustom sidekick-window-side 'right
-;;     "The Sidekick window position, left or right."
-;;     :type '(choice
-;;                (const :tag "Left" left)
-;;                (const :tag "Right" right)))
 
 (defcustom sidekick-window-hide-footer nil
     "Remove the Sidekick footer branding."
@@ -77,7 +67,6 @@
 ;; Private Variables ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-;; NOTE: Switch away from ripgrep and use plain grep.
 (defvar sidekick--mode-file-associations
     `(
          ("c++-mode"        . "*.{cpp,h,hh}")
@@ -97,6 +86,8 @@
          ("python-mode"     . "*.py")
          ("ruby-mode"       . "*.rb")
          ("rust-mode"       . "*.rs")
+         ("restclient-mode" . "*.el")
+         ("org-mode"        . "*.org")
          ("typescript-mode" . "*.ts")
          ;; Empty string, signifies using the current file's extension if
          ;; available.
@@ -109,10 +100,10 @@
     "The default Sidekick buffer name.")
 
 (defconst sidekick--match-line-number-regexp "^[0-9]+"
-    "Regexp used to extract line numbers from ripgrep results.")
+    "Regexp used to extract line numbers from grep results.")
 
-(defconst sidekick--match-file-path-regexp "^\\.\\/.+"
-    "Regexp used to extract file paths from ripgrep results.")
+(defconst sidekick--match-file-path-regexp "^[\/|\.\/].*"
+    "Regexp used to extract file paths from grep results.")
 
 (defvar sidekick--state-updating nil
     "Is non-nil when an update is in process.")
@@ -166,7 +157,7 @@
          ("^-\\{2\\}|\s\\(.*\\)\s|-+" (1 font-lock-function-name-face))
 
          ;; File path.
-         ("^\\./.*" . 'xref-file-header)
+         ("^[\/|\.\/].*" . 'xref-file-header)
 
          ;; Line numbers.
          ("^[0-9]+\\:" . 'xref-line-number)
@@ -187,12 +178,28 @@
     "Enables sidekick mode. Only used inside the Sidekick panel."
     (progn
         (setq buffer-read-only t)
-        (setq font-lock-defaults '(sidekick-mode-fonts t))
         (setq mode-line-format nil)
         (use-local-map sidekick-mode-local-map)
         (display-line-numbers-mode 0)
         (toggle-truncate-lines 1)
-        (run-hooks 'sidekick-mode-hook)))
+        (run-hooks 'sidekick-mode-hook)
+
+        ;; How can we add some additional font locks to out buffer without replaceing the text properties of exsiting text.
+        ;; We need to append our font-lock-defaults
+
+        ;; TODO: Do this:
+        ;; To get our colors set, we would need to change the draw functions to
+        ;; perform drawings inside a temp buffer where we color them using a new
+        ;; sidekick mode, just for font-locks.
+
+        ;; TODO: Can we add custom faces without replacing the current faces.
+        ;; (dolist (fface sidekick-mode-fonts)
+        ;;     (push fface font-lock-defaults))
+        ;; (prin1 font-lock-defaults)
+
+        ;; Disable this when your ready to add colors:
+        ;; (setq font-lock-defaults '(sidekick-mode-fonts t))
+        ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Keymap Interactions ;;
@@ -339,20 +346,13 @@ MATCH-LINE-NUM The match's line number."
 ;; Sidekick Utilities ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sidekick--get-rg-executable-path()
-    "Get the Ripgrep (rg) executable path."
-    (let ((rg-exe (executable-find "rg")))
-        (if (not rg-exe)
-            (progn
-                (message "Sidekick: ripgrep (rg) executable could not be found!") nil)
-            rg-exe)))
-
 (defun sidekick--get-project-root-path()
     "Get the root path to the current project.
 
 Returns the project path if found, otherwise nil."
     (let ((dir default-directory))
-        (let ((project-root (or (locate-dominating-file dir ".sidekick")
+        (let ((project-root (or (project-root (project-current))
+                                (locate-dominating-file dir ".sidekick")
                                 (when (fboundp 'projectile-project-root)
                                     (projectile-project-root))
                                 (locate-dominating-file dir ".projectile")
@@ -411,26 +411,6 @@ BUFFER-FN The buffers file name."
                     (setq iterator (length sidekick--mode-file-associations))))
             (setq iterator (+ iterator 1)))
         glob-pat))
-
-;; (defun sidekick--handle-window-creation(sidekick-buf)
-;;     "Handles the creation of the Sidekick window.
-
-;; Only create the Sidekick window if it does not already exist.
-
-;; SIDEKICK-BUF The sidekick buffer, will handle nil values."
-;;     (unless (get-buffer-window sidekick-buf t)
-;;         ;; Define default window properties.
-;;         (let ((buf-window-alist `(
-;;                                      (dedicated . t)
-;;                                      (slot . -1)
-;;                                      (side . left)
-;;                                      (window-width . 0.25)
-;;                                      (window-parameters . ((no-delete-other-windows . t))))))
-
-;;             ;; Set custom window properties.
-;;             (setf (alist-get 'window-width buf-window-alist) sidekick-window-width)
-;;             (setf (alist-get 'side buf-window-alist) sidekick-window-side)
-;;             (display-buffer-in-side-window sidekick-buf buf-window-alist))))
 
 (defun sidekick--handle-window-creation(sidekick-buf)
     "Handles the creation of the Sidekick window.
@@ -560,102 +540,10 @@ TEXT The text to be centered."
 COMMAND-STRING The shell command."
     (replace-regexp-in-string "\\$" "\\$" command-string nil t))
 
-(defun sidekick--get-ripgrep-output-string(args symbol-str path mode-str buffer-fn)
-    "Run ripgrep and return a string containing the output.
-
-Will concatenate the ripgrep command string, run it and return
-the output as a string.
-
-ARGS The arguments string for ripgrep.
-SYMBOL-STR The symbol without text properties, string format.
-PATH The path from where ripgrep will run.
-MODE-STR The mode name as a string.
-BUFFER-FN The buffers files name."
-    (let ((symbol-lit  (prin1-to-string symbol-str))
-             (line-max-col
-                 (concat
-                     "--max-columns="
-                     (number-to-string sidekick-search-max-line-length)))
-             (glob-pat (concat
-                           "--glob="
-                           (prin1-to-string
-                               (sidekick--get-mode-file-glob-pattern
-                                   mode-str
-                                   buffer-fn)))))
-        (let ((rg-cmd (mapconcat 'identity
-                          (list
-                              (sidekick--get-rg-executable-path)
-                              args line-max-col glob-pat
-                              "--" symbol-lit path) " ")))
-            (shell-command-to-string (sidekick--escape-shell-command-string rg-cmd)))))
-
-(defun sidekick--update-symbol-occur(symbol-str buffer-fn project-dir mode-str)
-    "Show all occurrences of symbol in the current active buffer.
-
-Will use ripgrep to just search the current buffer and inserts
-the results inside the Sidekick buffer.
-
-SYMBOL-STR The symbol without text properties, string format.
-BUFFER-FN The buffers files name.
-PROJECT-DIR The projects root directory path.
-MODE-STR The mode name as a string."
-    (sidekick-draw-section-heading "In Buffer")
-    (cd project-dir)
-    (insert (sidekick--get-ripgrep-output-string
-                "-F -n --no-heading --no-filename --trim"
-                symbol-str
-                buffer-fn
-                mode-str
-                buffer-fn))
-    (insert "\n"))
-
-(defun sidekick--update-symbol-references(symbol-str buffer-fn project-dir mode-str)
-    "Show all references to a symbol inside a project directory.
-
-Will use ripgrep to search the current projects for a symbol
-inside files matching the mode's glob patterns and insert the
-results into Sidekick buffer.
-
-SYMBOL-STR The symbol without text properties, string format.
-BUFFER-FN The buffers files name.
-PROJECT-DIR The projects root directory path.
-MODE-STR The mode name as a string."
-    ;; TODO: Exclude the current buffers file.
-    (sidekick-draw-section-heading "In Project")
-    (cd project-dir)
-    (insert (sidekick--get-ripgrep-output-string
-                "-F -n --heading --trim"
-                symbol-str
-                "./"
-                mode-str
-                buffer-fn))
-    (insert "\n"))
-
-(defun sidekick--update-symbol-files(symbol-str buffer-fn project-dir mode-str)
-    "Find all files containing the symbol, or term.
-
-Will use ripgrep to search the current projects for files
-containing a symbol.  These files must match the mode's glob
-pattern.
-
-SYMBOL-STR The symbol without text properties, string format.
-BUFFER-FN The buffers files name.
-PROJECT-DIR The projects root directory path.
-MODE-STR The mode name as a string."
-    (sidekick-draw-section-heading "Files")
-    (cd project-dir)
-    (insert (sidekick--get-ripgrep-output-string
-                "-F -l"
-                symbol-str
-                "./"
-                mode-str
-                buffer-fn))
-    (insert "\n"))
-
 (defun sidekick--update-eldoc(symbol-str buffer-fn project-dir mode-str)
     "Find all files containing the symbol, or term.
 
-Will use ripgrep to search the current projects for files
+Will use grep to search the current projects for files
 containing a symbol.  These files must match the mode's glob
 pattern.
 
@@ -672,6 +560,115 @@ MODE-STR The mode name as a string."
         (when doc-buf
             (insert-buffer-substring doc-buf)))
     (insert "\n\n"))
+
+(defun sidekick--update-project-matches(symbol-str buffer-fn project-dir mode-str)
+    (sidekick-draw-section-heading "Matches")
+
+    ;; TODO: Insert matching details, glob patterns.
+
+    ;; I know what to do here.
+
+    ;; Why not just use Emacs lisp to do the searching for us, that way we the
+    ;; syntax highlighting can be done on the emacs side, without us needing to
+    ;; be concerned about anything.
+
+    ;; - Get the list of files that contains the search terms.
+    (let* ((grep-cmd (mapconcat 'identity (list
+                                              "grep"
+                                              "--recursive"
+                                              "--ignore-case"
+                                              "--with-filename"
+
+                                              ;; Just print file name headers.
+                                              "-H"
+
+                                              ;; Only return file names.
+                                              "--files-with-matches"
+
+                                              ;; Adds zero byte after each file name.
+                                              "--null"
+
+                                              ;; Exclude directories.
+                                              "--exclude-dir='.git'"
+
+                                              ;; Exclude binary files.
+                                              "--binary-files=without-match"
+
+                                              ;; "--line-buffered"
+                                              ;; "--only-matching"
+                                              ;; "--null"
+                                              ;; "--exclude='.git/**/*'"
+
+                                              ;; NEXT:
+                                              ;; TODO: Build our glob patterns.
+                                              ;; see: https://stackoverflow.com/questions/24197179/grep-include-command-doesnt-work-in-osx-zsh
+                                              ;; Build our list up
+                                              ;; Build our glob patterns out here.
+                                              ;; "--include='*.el'"
+                                              ;; "--include='*.md'"
+                                              ;; "--include='*.html'"
+                                              ;; ;; "--include='*.blade'"
+                                              ;; "--include='*.php'"
+
+                                              symbol-str
+                                              project-dir
+
+                                              ;; symbol-str
+                                              ;; "/Users/vernon/ProjectsP/sidekick.el"
+                                              ) " "))
+              (results (shell-command-to-string grep-cmd))
+              (resulting-files (if (length< results 1)
+                                   nil
+                                   (split-string results "\0")))
+              (string-not-empty-p (lambda (s) (not (string-empty-p s))))
+              (files (seq-filter string-not-empty-p resulting-files)))
+
+        ;; NOTE: Remove this later.
+        (print grep-cmd)
+
+        ;; For each file, create our entry.
+        (dolist (file files)
+            ;; TODO: We want to beutify the file path.
+            ;; Print the file path.
+            (insert file "\n")
+
+            ;; Here we want to build a buffer and inject it.
+            (insert (with-temp-buffer
+                        (insert-file-contents file)
+
+                        ;; We need to automatically enable the related file
+                        ;; major mode. So we can get proper highlighting.
+                        (let* ((file-ext (file-name-extension file))
+                                  (match-mode-p (lambda (r k) (if (or (not r) (not k)) nil (string-match r (concat "." k)))))
+                                  (mode (cdr (assoc file-ext auto-mode-alist match-mode-p))))
+                            (when mode
+                                ;; For certain modes we want to choose alternative options, do that here.
+                                (cond ((eq mode 'php-mode-maybe) (funcall 'php-mode))
+                                    (t (funcall mode)))))
+                        (font-lock-ensure)
+                        ;; (font-lock-flush)
+
+                        ;; Make operations case-insensitive.
+                        (when sidekick-search-case-insensitive
+                            (setq-local search-upper-case nil))
+
+                        ;; Perform buffer modifications:
+                        ;; - Injects line numbers.
+                        ;; - Removes indentations.
+                        (goto-char (point-min))
+                        (while (not (eobp))
+                            (move-beginning-of-line 1)
+                            (cycle-spacing)
+                            (backward-char) ;; (move-beginning-of-line 1)
+                            (insert (concat (number-to-string (line-number-at-pos)) ":") )
+                            (forward-line 1))
+
+                        ;; Remove all lines from the buffer that does not match
+                        ;; our symbol.
+                        (keep-lines symbol-str (point-min) (point-max))
+                        (buffer-string)))
+
+            (insert "\n"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
@@ -721,29 +718,43 @@ MODE-STR The mode name as a string."
             (sidekick--deconstruct)
             (erase-buffer)
             ;; TODO: Check if eldoc is enabled first.
-            ;; Show documentation.
-            (sidekick--update-eldoc
-                symbol-str buffer-fn project-dir mode-str)
 
             ;; TODO: Add xref.
 
-            (sidekick--update-symbol-occur
-                symbol-str buffer-fn project-dir mode-str)
+            ;; (sidekick--update-symbol-occur
+            ;;     symbol-str buffer-fn project-dir mode-str)
 
-            (sidekick--update-symbol-references
-                symbol-str buffer-fn project-dir mode-str)
+            ;; (sidekick--update-symbol-references
+            ;;     symbol-str buffer-fn project-dir mode-str)
 
             ;; TODO: add more features here.
             ;; TODO: Maybe remove files.
-            (sidekick--update-symbol-files
-                symbol-str buffer-fn project-dir mode-str)
+            ;; (sidekick--update-symbol-files
+            ;;     symbol-str buffer-fn project-dir mode-str)
 
+            ;; Show documentation.
+            ;; (sidekick--update-eldoc
+            ;;     symbol-str buffer-fn project-dir mode-str)
 
+            ;; Grep solution.
+            ;; (sidekick--update-grep-symbol
+            ;;     symbol-str buffer-fn project-dir mode-str)
+
+            ;; (type-of (thing-at-point 'symbol))
+            ;; (message (type-of symbol-str))
+
+            ;; O wow.
+            (sidekick--update-project-matches
+                symbol-str
+                buffer-fn
+                project-dir
+                mode-str)
 
             (sidekick--update-footer)
             (goto-char (point-min))
             (sidekick-mode)
-            (highlight-regexp (regexp-quote symbol-str) 'highlight)))
+            ;; (highlight-regexp (regexp-quote symbol-str) 'highlight)
+            ))
 
     ;; If we're not inside the Sidekick window, and take focus is non-nil,
     ;; select it.
@@ -765,7 +776,7 @@ can not be performed.  In order for Sidekick to update the
 following conditions apply:
 
 1. Buffer must have an associated file.  2. Project directory
-needs to be successfully detected.  3. The ripgrep executable
+needs to be successfully detected.  3. The grep executable
 must be available.  4. Sidekick should not already be in the
 state of updating.  5. The symbol length must be more then the
 minimum specified with `sidekick-search-minimum-symbol-length'.
@@ -780,7 +791,7 @@ MODE-STR The mode name as a string."
         symbol
         buffer-fn
         project-dir
-        (sidekick--get-rg-executable-path)
+        ;; (sidekick--get-grep-executable-path) ;; TODO: check for grep path here.
         (not sidekick--state-updating)
         (> (string-width symbol) (if (< sidekick-search-minimum-symbol-length 2) 2
                                      sidekick-search-minimum-symbol-length))
@@ -829,6 +840,7 @@ MODE-STR The mode name as a string."
     "Takes the symbol at point and triggers a Sidekick update."
     (interactive)
     (sidekick--trigger-update
+        ;; Just testing.
         (thing-at-point 'symbol)
         (buffer-file-name)
         (symbol-name major-mode)))

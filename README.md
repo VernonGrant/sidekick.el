@@ -15,8 +15,7 @@
 
 Sidekick is an **Emacs package** that's aim is to provide information about a
 symbol inside a single window. **It's still in its infancy**, and at this point in
-time only searches for references using
-[ripgrep](https://github.com/BurntSushi/ripgrep). It will however be in active
+time only searches for references using `grep`. It will however be in active
 development and I hope to extend it in the near future to support things such as
 getting a symbols documentation and extracting other time saving information.
 
@@ -27,9 +26,8 @@ please open a [new issue](https://github.com/VernonGrant/sidekick.el/issues/new)
 
 ## Installation
 
-Important: **ripgrep (rg) is required!** Please make sure you have it installed
-and available in your system path, see [Installing
-ripgrep](https://github.com/BurntSushi/ripgrep#installation).
+Important: **grep is required!** Please make sure you have it installed
+and available in your system path.
 
 #### Manual installation
 
@@ -44,16 +42,11 @@ Clone this repository locally, and add the load path to your `.emacs`:
 
 ;; Set some default bindings.
 (global-set-key (kbd "C-c k") 'sidekick-at-point)
-(global-set-key (kbd "C-c K") 'sidekick-focus-toggle)
 (global-set-key (kbd "C-c C-k") 'sidekick-search-for-literal)
 
 ;; Optional:
 ;; Maybe customize a mode's file assosiations?
-(sidekick-set-file-associations "php-mode" "*.{php,twig,blade,phtml}")
-(sidekick-set-file-associations "web-mode" "*.{php,html,scss,sass}")
-
-;; Maybe, make sidekick take focus after update?
-;; (setq sidekick-window-take-focus t)
+(sidekick-set-file-associations "web-mode" '("php" "twig" "blade" "phtml"))
 
 ;; Notes:
 ;; On Windows, use this path format:
@@ -90,7 +83,6 @@ You can customize keybindings that are local to the Sidekick window, like this:
 |---------------------------------|--------------------------------------------------------------|
 | **sidekick-at-point**           | Takes the symbol at point and triggers the update call.      |
 | **sidekick-focus**              | Focuses on the Sidekick window, if visible.                  |
-| **sidekick-focus-toggle**       | Toggle between sidekick window and previous buffer's window. |
 | **sidekick-search-for-literal** | Input a literal string and triggers the update call.         |
 
 You can define custom key bindings for any of the above commands. See the below
@@ -124,7 +116,7 @@ example:
 
 #### How the projects root directory is determined
 
-A projects root directory is determined by having one of the following files.
+A projects root directory is determined by `project.el`. If not in use, the following additional checks are made.
 
 - A file named `.sidekick` *(highest priority)*
 - A file named `.projectile`
@@ -141,40 +133,6 @@ A projects root directory is determined by having one of the following files.
 	(setq sidekick-search-minimum-symbol-length 3)
 	```
 
-- **sidekick-search-max-line-length:** The maximum line width of a search result
-  in columns. Useful for to limit large minified files.
-  - Type: integer
-  - Default: `500`
-  - Example:
-	```lisp
-	(setq sidekick-search-max-line-length 1000)
-	```
-
-- **sidekick-window-take-focus:** If non-nil, automatically select the sidekick
-  window after every update.
-  - Type: boolean
-  - Default: `nil`
-  - Example:
-	```lisp
-	(setq sidekick-window-take-focus t)
-	```
-
-- **sidekick-window-width:** The width of the sidekick window in normalized percentage.
-  - Type: float
-  - Default: `0.3`
-  - Example:
-	```lisp
-	(setq sidekick-window-width 0.225)
-	```
-
-- **sidekick-window-side:** The Sidekick window position, left or right.
-  - Type: symbol
-  - Default: `'right`
-  - Example:
-	```lisp
-	(setq sidekick-window-side 'left)
-	```
-
 - **sidekick-window-hide-footer:** Remove the Sidekick footer branding.
   - Type: boolean
   - Default: `nil`
@@ -185,46 +143,49 @@ A projects root directory is determined by having one of the following files.
 
 #### Modifying a mode's associated files
 
-The blow list specifies the default mode - file associations. These
-associations allow you to search for specific file types on a per mode
-basis. For example, if your using `web-mode` for HTML files, it might also be
-useful to search for a symbol inside `SCSS` and `Javascirpt` files.
-
-| Mode            | Files                  |
-|-----------------|------------------------|
-| c++-mode        | `"*.{cpp,h,hh}"`       |
-| c-mode          | `"*.{c,cc,h,hh}"`      |
-| cperl-mode      | `"*.{pl,PL}"`          |
-| css-mode        | `"*.css"`              |
-| scss-mode       | `"*.{css,sass,scss}"`  |
-| emacs-lisp-mode | `"*.{el,emacs}"`       |
-| go-mode         | `"*.go"`               |
-| java-mode       | `"*.java"`             |
-| js-mode         | `"*.{js,es,es6}"`      |
-| json-mode       | `"*.json"`             |
-| markdown-mode   | `"*.md"`               |
-| text-mode       | `"*.txt"`              |
-| php-mode        | `"*.{php,phtml,twig}"` |
-| phps-mode       | `"*.{php,phtml,twig}"` |
-| python-mode     | `"*.py"`               |
-| ruby-mode       | `"*.rb"`               |
-| rust-mode       | `"*.rs"`               |
-| typescript-mode | `"*.ts"`               |
-| web-mode        | `""`                   |
-| nxml-mode       | `"*.{xml,xml.dist}"`   |
-| yaml-mode       | `"*.yml"`              |
-
-**If the provided glob pattern is an empty string**, Sidekick will just search for
-files with the same extension as the active buffer's file. To add or update an
-existing mode's file associations, the following helper function has been
-provided. See the below usage example:
+The below list specifies the default mode - file associations. These
+associations allow you to search within specific file types on a per mode basis.
+For example, if your using `web-mode` for HTML files, it might also be useful to
+search for a symbol inside `SCSS` and `Javascirpt` files.
 
 ```lisp
-;; Adds a new mode, glob pair.
-(sidekick-set-file-associations "example-mode" "*.{exam,examp}")
+(defvar sidekick--mode-file-associations
+    `(
+         ("c++-mode"        . ("cpp" "h" "hh"))
+         ("c-mode"          . ("c" "cc" "h" "hh"))
+         ("cperl-mode"      . ("pl" "PL"))
+         ("css-mode"        . ("css"))
+         ("scss-mode"       . ("css" "sass" "scss"))
+         ("emacs-lisp-mode" . ("el" "emacs"))
+         ("go-mode"         . ("go"))
+         ("java-mode"       . ("java"))
+         ("js-mode"         . ("js" "es" "es6"))
+         ("json-mode"       . ("json"))
+         ("markdown-mode"   . ("md"))
+         ("text-mode"       . ("txt"))
+         ("php-mode"        . ("php" "phtml" "twig" "blade"))
+         ("phps-mode"       . ("php" "phtml" "twig" "blade"))
+         ("python-mode"     . ("py"))
+         ("ruby-mode"       . ("rb"))
+         ("rust-mode"       . ("rs"))
+         ("restclient-mode" . ("el"))
+         ("org-mode"        . ("org"))
+         ("typescript-mode" . ("ts"))
+         ("web-mode"        . ("html" "blade" "twig"))
+         ("nxml-mode"       . ("xml" "xml.dist"))
+         ("yaml-mode"       . ("yml")))
+    "Association List holding major mode file associations.")
+```
 
-;; Replace an existing mode's file globs.
-(sidekick-set-file-associations "web-mode" "*.{php,html,scss,sass}")
+To add or update an existing mode's file associations, the following helper
+function has been provided. See the below usage example:
+
+```lisp
+;; Adds a file associations for a new mode.
+(sidekick-set-file-associations "example-mode" '("html" "php" "py"))
+
+;; Replace an existing mode's file associations.
+(sidekick-set-file-associations "web-mode" '("html" "scss" "sass" "php"))
 ```
 
 ## Credits
@@ -236,4 +197,3 @@ development of this package.
 - [Free Software Foundation](https://www.fsf.org/)
 - Xah Lee, author of [Xah Emacs Tutorial](http://xahlee.info/emacs/index.html)
 - Mickey Petersen, author of [Mastering Emacs](https://www.masteringemacs.org/)
-- Andrew Gallant (BurntSushi), creator of [ripgrep](https://github.com/BurntSushi/ripgrep)

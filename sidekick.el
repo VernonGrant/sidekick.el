@@ -28,6 +28,8 @@
 
 ;;; Code:
 
+(require 'project)
+
 ;;;;;;;;;;;;;;;;;;;;
 ;; Customizations ;;
 ;;;;;;;;;;;;;;;;;;;;
@@ -37,21 +39,20 @@
     :group 'convenience
     :prefix "sidekick-search-")
 
-(defcustom sidekick-search-minimum-symbol-length 3
+(defcustom sidekick-search-minimum-symbol-length 2
     "The minimum symbol / term length in order for Sidekick to update."
     :group 'sidekick-search
     :type 'integer)
 
-(defcustom sidekick-search-max-line-length 500
-    "The maximum line width of a search result in columns."
-    :group 'sidekick-search
-    :type 'integer)
-
-;; TODO: Implement this.
 (defcustom sidekick-search-case-insensitive t
     "Should sidekick searches be case insensitve."
     :group 'sidekick-search
     :type 'boolean)
+
+(defcustom sidekick-search-file-limit 10000
+    "Limit the number of files to process during project wide matching search."
+    :group 'sidekick-search
+    :type 'integer)
 
 (defgroup sidekick-window nil
     "Sidekick window settings."
@@ -68,38 +69,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar sidekick--mode-file-associations
-    `(
-         ("c++-mode"        . "*.{cpp,h,hh}")
-         ("c-mode"          . "*.{c,cc,h,hh}")
-         ("cperl-mode"      . "*.{pl,PL}")
-         ("css-mode"        . "*.css")
-         ("scss-mode"       . "*.{css,sass,scss}")
-         ("emacs-lisp-mode" . "*.{el,emacs}")
-         ("go-mode"         . "*.go")
-         ("java-mode"       . "*.java")
-         ("js-mode"         . "*.{js,es,es6}")
-         ("json-mode"       . "*.json")
-         ("markdown-mode"   . "*.md")
-         ("text-mode"       . "*.txt")
-         ("php-mode"        . "*.{php,phtml,twig}")
-         ("phps-mode"       . "*.{php,phtml,twig}")
-         ("python-mode"     . "*.py")
-         ("ruby-mode"       . "*.rb")
-         ("rust-mode"       . "*.rs")
-         ("restclient-mode" . "*.el")
-         ("org-mode"        . "*.org")
-         ("typescript-mode" . "*.ts")
-         ;; Empty string, signifies using the current file's extension if
-         ;; available.
-         ("web-mode"        . "")
-         ("nxml-mode"       . "*.{xml,xml.dist}")
-         ("yaml-mode"       . "*.yml"))
+    `(("c++-mode"        . ("cpp" "h" "hh"))
+         ("c-mode"          . ("c" "cc" "h" "hh"))
+         ("cperl-mode"      . ("pl" "PL"))
+         ("css-mode"        . ("css"))
+         ("scss-mode"       . ("css" "sass" "scss"))
+         ("emacs-lisp-mode" . ("el" "emacs"))
+         ("go-mode"         . ("go"))
+         ("java-mode"       . ("java"))
+         ("js-mode"         . ("js" "es" "es6"))
+         ("json-mode"       . ("json"))
+         ("markdown-mode"   . ("md"))
+         ("text-mode"       . ("txt"))
+         ("php-mode"        . ("php" "phtml" "twig" "blade"))
+         ("phps-mode"       . ("php" "phtml" "twig" "blade"))
+         ("python-mode"     . ("py"))
+         ("ruby-mode"       . ("rb"))
+         ("rust-mode"       . ("rs"))
+         ("restclient-mode" . ("el"))
+         ("org-mode"        . ("org"))
+         ("typescript-mode" . ("ts"))
+         ("web-mode"        . ("html" "blade" "twig"))
+         ("nxml-mode"       . ("xml" "xml.dist"))
+         ("yaml-mode"       . ("yml")))
     "Association List holding major mode file associations.")
 
 (defconst sidekick--buffer-name "*sidekick*"
     "The default Sidekick buffer name.")
 
-(defconst sidekick--match-line-number-regexp "^[0-9]+"
+(defconst sidekick--match-line-number-regexp "^[0-9]+:"
     "Regexp used to extract line numbers from grep results.")
 
 (defconst sidekick--match-file-path-regexp "^[\/|\.\/].*"
@@ -129,9 +127,6 @@
 (defvar sidekick--state-buffer-file-name nil
     "The buffer file name of the current operation.")
 
-(defvar sidekick--state-previous-buffer-window nil
-    "Holds the previous buffer's window, so focus can be toggled.")
-
 ;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Mode ;;
 ;;;;;;;;;;;;;;;;;;;
@@ -152,15 +147,18 @@
 (defvar sidekick-mode-fonts
     `(
          ;; Headings.
-         ("^-\\{2\\}|\s?" . 'font-lock-comment-face)
-         ("^-\\{2\\}|\s.*\\(|-+\\)" (1 font-lock-comment-face))
-         ("^-\\{2\\}|\s\\(.*\\)\s|-+" (1 font-lock-function-name-face))
+         ("^-\\{3\\}|\s?" . 'font-lock-comment-face)
+         ("^-\\{3\\}|\s.*\\(|-+\\)" (1 font-lock-comment-face))
+         ("^-\\{3\\}|\s\\(.*\\)\s|-+" (1 font-lock-function-name-face))
+
+         ;; Sub headings.
+         ("^-\\{3\\}|\s\\(.*\\)" (1 font-lock-function-name-face))
 
          ;; File path.
-         ("^[\/|\.\/].*" . 'xref-file-header)
+         ("^[\/|\.\/].*" . 'compilation-info)
 
          ;; Line numbers.
-         ("^[0-9]+\\:" . 'xref-line-number)
+         ("^[\s0-9]+" . 'compilation-line-number)
 
          ;; Footer sections.
          ("^-\\{3\\}.*" . font-lock-comment-face)
@@ -178,28 +176,11 @@
     "Enables sidekick mode. Only used inside the Sidekick panel."
     (progn
         (setq buffer-read-only t)
-        (setq mode-line-format nil)
         (use-local-map sidekick-mode-local-map)
         (display-line-numbers-mode 0)
         (toggle-truncate-lines 1)
         (run-hooks 'sidekick-mode-hook)
-
-        ;; How can we add some additional font locks to out buffer without replaceing the text properties of exsiting text.
-        ;; We need to append our font-lock-defaults
-
-        ;; TODO: Do this:
-        ;; To get our colors set, we would need to change the draw functions to
-        ;; perform drawings inside a temp buffer where we color them using a new
-        ;; sidekick mode, just for font-locks.
-
-        ;; TODO: Can we add custom faces without replacing the current faces.
-        ;; (dolist (fface sidekick-mode-fonts)
-        ;;     (push fface font-lock-defaults))
-        ;; (prin1 font-lock-defaults)
-
-        ;; Disable this when your ready to add colors:
-        ;; (setq font-lock-defaults '(sidekick-mode-fonts t))
-        ))
+        (setq font-lock-defaults '(sidekick-mode-fonts t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Keymap Interactions ;;
@@ -348,7 +329,6 @@ MATCH-LINE-NUM The match's line number."
 
 (defun sidekick--get-project-root-path()
     "Get the root path to the current project.
-
 Returns the project path if found, otherwise nil."
     (let ((dir default-directory))
         (let ((project-root (or (project-root (project-current))
@@ -357,36 +337,19 @@ Returns the project path if found, otherwise nil."
                                     (projectile-project-root))
                                 (locate-dominating-file dir ".projectile")
                                 (locate-dominating-file dir ".git"))))
-            (if project-root
-                project-root
-                (progn (message "Sidekick: Project root directory not found!") nil)))))
+
+            (when (not project-root)
+                (message "Sidekick: Project root directory not found!"))
+
+            (if (string-suffix-p "/" project-root)
+                (substring project-root 0 -1)
+                project-root))))
 
 (defun sidekick--get-window-width()
     "Get the Sidekick window width in columns."
     (let ((sidekick-win (nth 0 (get-buffer-window-list sidekick--buffer-name))))
         (if sidekick-win
             (window-width sidekick-win) (+ 80))))
-
-(defun sidekick--extract-supported-modes()
-    "Extracts all supported modes from `sidekick--mode-file-associations'.
-
-Returns a new list containing only the extracted modes from
-`sidekick--mode-file-associations'."
-    (let ((iterator 0)
-             (modes-list nil))
-        (while (< iterator (length sidekick--mode-file-associations))
-            (let ((mode (nth iterator sidekick--mode-file-associations)))
-                (push (car mode) modes-list))
-            (setq iterator (+ iterator 1)))
-        modes-list))
-
-(defun sidekick--has-mode-file-associations(mode-str)
-    "Non-nil when a mode's is found in the supported file associations list.
-
-MODE-STR The major mode name."
-    (if (member mode-str (sidekick--extract-supported-modes))
-        t
-        (progn (message "Sidekick: No file associations found for this mode!") nil)))
 
 (defun sidekick--get-mode-file-glob-pattern(mode-str buffer-fn)
     "Get the supported file glob pattern based on the mode and buffer file name.
@@ -439,7 +402,7 @@ SIDEKICK-BUF The sidekick buffer, will handle nil values."
             (display-buffer-same-window sidekick-buf buf-window-alist)
             )))
 
-(defun sidekick-set-file-associations(mode-str globs)
+(defun sidekick-set-file-associations(mode-str extensions)
     "Add new, or update existing major mode file associations.
 
 If a mode already exists, it's glob pattern get's replaced.  If
@@ -447,13 +410,13 @@ no matching mode was found, it will be added to the
 `sidekick--mode-file-associations' list.
 
 MODE-STR The mode name as a string.
-GLOBS The glob pattern as a string."
+EXTENSIONS The glob pattern as a string."
     (let ((mode-alist (assoc mode-str sidekick--mode-file-associations)))
         (if mode-alist
             ;; Update existing alist if the mode does exist.
-            (setcdr (assoc (car mode-alist) sidekick--mode-file-associations) globs)
+            (setcdr (assoc (car mode-alist) sidekick--mode-file-associations) extensions)
             ;; Push new alist if the mode does not exist.
-            (push (list mode-str globs) sidekick--mode-file-associations))))
+            (push (cons mode-str extensions) sidekick--mode-file-associations))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick User Interface ;;
@@ -464,13 +427,20 @@ GLOBS The glob pattern as a string."
 
 HEADING The heading text label."
     (let ((iterator 0)
-             (heading-fnl (concat "--| " heading " |")))
+             (heading-fnl (concat "---| " heading " |")))
         (insert heading-fnl)
         (while (< iterator
                    (- (sidekick--get-window-width) (string-width heading-fnl)))
             (progn
                 (setq iterator (+ iterator 1))
                 (insert "-"))))
+    (insert "\n\n"))
+
+(defun sidekick-draw-section-sub-heading(heading)
+    "Draws a sub heading separator inside the active buffer.
+
+HEADING The heading text label."
+    (insert (concat "---| "  heading))
     (insert "\n\n"))
 
 (defun sidekick-draw-separator()
@@ -562,113 +532,135 @@ MODE-STR The mode name as a string."
     (insert "\n\n"))
 
 (defun sidekick--update-project-matches(symbol-str buffer-fn project-dir mode-str)
-    (sidekick-draw-section-heading "Matches")
+    " Finds symbol in all associated files.
 
-    ;; TODO: Insert matching details, glob patterns.
+Will use grep to search the current projects for files containing
+a symbol. The files that are searched depends on the file
+extensions associated with the current mode.
 
-    ;; I know what to do here.
-
-    ;; Why not just use Emacs lisp to do the searching for us, that way we the
-    ;; syntax highlighting can be done on the emacs side, without us needing to
-    ;; be concerned about anything.
+SYMBOL-STR The symbol without text properties, string format.
+BUFFER-FN The buffers files name.
+PROJECT-DIR The projects root directory path.
+MODE-STR The mode name as a string."
+    (sidekick-draw-section-heading "Matches in associated files")
 
     ;; - Get the list of files that contains the search terms.
     (let* ((grep-cmd (mapconcat 'identity (list
                                               "grep"
                                               "--recursive"
-                                              "--ignore-case"
-                                              "--with-filename"
 
-                                              ;; Just print file name headers.
-                                              "-H"
+                                              ;; Make make searches case insensitive.
+                                              (when sidekick-search-case-insensitive
+                                                  "--ignore-case")
+
+                                              ;; Use mmap(2) instead of read(2)
+                                              ;; to read input, which can result
+                                              ;; in better performance under
+                                              ;; some circumstances but can
+                                              ;; cause undefined behaviour.
+                                              "--mmap"
+
+                                              ;; Interpret pattern as fixed strings.
+                                              "--fixed-strings"
+
+                                              ;; Treat files as text.
+                                              "--text"
 
                                               ;; Only return file names.
                                               "--files-with-matches"
 
-                                              ;; Adds zero byte after each file name.
+                                              ;; Adds zero byte after each file
+                                              ;; name, required to create file
+                                              ;; list.
                                               "--null"
-
-                                              ;; Exclude directories.
-                                              "--exclude-dir='.git'"
 
                                               ;; Exclude binary files.
                                               "--binary-files=without-match"
 
-                                              ;; "--line-buffered"
-                                              ;; "--only-matching"
-                                              ;; "--null"
-                                              ;; "--exclude='.git/**/*'"
+                                              ;; TODO: Implement excluded
+                                              ;; directories option.
+                                              "--exclude-dir='.git'"
+                                              ;; "--exclude-dir='vendor'"
 
-                                              ;; NEXT:
-                                              ;; TODO: Build our glob patterns.
-                                              ;; see: https://stackoverflow.com/questions/24197179/grep-include-command-doesnt-work-in-osx-zsh
-                                              ;; Build our list up
-                                              ;; Build our glob patterns out here.
-                                              ;; "--include='*.el'"
-                                              ;; "--include='*.md'"
-                                              ;; "--include='*.html'"
-                                              ;; ;; "--include='*.blade'"
-                                              ;; "--include='*.php'"
+                                              ;; Let's build our include paths.
+                                              (mapconcat
+                                                  (lambda(s) (format "--include='*.%s'" s))
+                                                  (cdr (assoc mode-str sidekick--mode-file-associations)) " ")
 
-                                              symbol-str
-                                              project-dir
+                                              ;; The search string.
+                                              ;; TODO: Escape single quotes here.
+                                              (concat "'" symbol-str "'")
 
-                                              ;; symbol-str
-                                              ;; "/Users/vernon/ProjectsP/sidekick.el"
-                                              ) " "))
+                                              ;; The project directory.
+                                              project-dir) " "))
               (results (shell-command-to-string grep-cmd))
               (resulting-files (if (length< results 1)
                                    nil
                                    (split-string results "\0")))
               (string-not-empty-p (lambda (s) (not (string-empty-p s))))
-              (files (seq-filter string-not-empty-p resulting-files)))
 
-        ;; NOTE: Remove this later.
+              ;; TODO: Add file limit option.
+              ;; Lets set a limit for now.
+              (files (take sidekick-search-file-limit (seq-filter string-not-empty-p resulting-files)))
+              (grouped-files '()))
+
+        ;; Group files based on their extensions.
+        (dolist (file files)
+            (let ((file-ext (file-name-extension file)))
+                (if (assoc file-ext grouped-files)
+                    (push file (cdr (assoc file-ext grouped-files)))
+                    (push (cons file-ext (list file)) grouped-files))))
+
+        ;; NOTE: Maybe we need to sort out list.
+        (print grouped-files)
         (print grep-cmd)
 
-        ;; For each file, create our entry.
-        (dolist (file files)
-            ;; TODO: We want to beutify the file path.
-            ;; Print the file path.
-            (insert file "\n")
+        ;; No we create a single buffer for each file type.
+        (dolist (group grouped-files)
+            (let* ((ext (car group))
+                      (ext-files (cdr group))
+                      (ext-files-count (length ext-files))
+                      (ext-files-count-str (if (= ext-files-count 1)
+                                               (concat " (" (int-to-string ext-files-count) " File)")
+                                               (concat " (" (int-to-string ext-files-count) " Files)")))
+                      (match-mode-p (lambda (r k) (if (or (not r) (not k)) nil (string-match r (concat "." k)))))
+                      (mode (cdr (assoc ext auto-mode-alist match-mode-p)))
+                      (mode-name-p (lambda (s) (capitalize (string-join (butlast (string-split s "-")) " ")))))
 
-            ;; Here we want to build a buffer and inject it.
-            (insert (with-temp-buffer
-                        (insert-file-contents file)
+                ;; Insert mode heading.
+                (goto-char (point-max))
+                (if mode
+                    (sidekick-draw-section-sub-heading (concat (funcall mode-name-p (symbol-name mode)) ext-files-count-str))
+                    (sidekick-draw-section-sub-heading ext))
 
-                        ;; We need to automatically enable the related file
-                        ;; major mode. So we can get proper highlighting.
-                        (let* ((file-ext (file-name-extension file))
-                                  (match-mode-p (lambda (r k) (if (or (not r) (not k)) nil (string-match r (concat "." k)))))
-                                  (mode (cdr (assoc file-ext auto-mode-alist match-mode-p))))
-                            (when mode
-                                ;; For certain modes we want to choose alternative options, do that here.
-                                (cond ((eq mode 'php-mode-maybe) (funcall 'php-mode))
-                                    (t (funcall mode)))))
-                        (font-lock-ensure)
-                        ;; (font-lock-flush)
+                ;; Performance is trash, think of better options.
+                (dolist (file ext-files)
+                    (insert (with-temp-buffer
+                                ;; Make sure the search results are case insensitive (keep lines).
+                                (when sidekick-search-case-insensitive
+                                    (setq-default search-upper-case nil))
 
-                        ;; Make operations case-insensitive.
-                        (when sidekick-search-case-insensitive
-                            (setq-local search-upper-case nil))
+                                ;; Insert our file contents.
+                                (insert-file-contents file)
 
-                        ;; Perform buffer modifications:
-                        ;; - Injects line numbers.
-                        ;; - Removes indentations.
-                        (goto-char (point-min))
-                        (while (not (eobp))
-                            (move-beginning-of-line 1)
-                            (cycle-spacing)
-                            (backward-char) ;; (move-beginning-of-line 1)
-                            (insert (concat (number-to-string (line-number-at-pos)) ":") )
-                            (forward-line 1))
+                                ;; Delete un-wanted whitespace.
+                                (delete-whitespace-rectangle (point-min) (point-max))
 
-                        ;; Remove all lines from the buffer that does not match
-                        ;; our symbol.
-                        (keep-lines symbol-str (point-min) (point-max))
-                        (buffer-string)))
+                                ;; Insert line numbers
+                                (rectangle-number-lines (point-min) (point-max) 1 "%s: ")
 
-            (insert "\n"))))
+                                ;; Remove lines that are of no interest.
+                                (keep-lines symbol-str (point-min) (point-max))
+
+                                ;; Insert file path.
+                                (goto-char (point-min))
+                                (insert file "\n")
+
+                                ;; Insure empty lines.
+                                (goto-char (point-max))
+                                (delete-blank-lines)
+                                (buffer-string)))
+                    (insert "\n"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sidekick Functionality ;;
@@ -743,7 +735,7 @@ MODE-STR The mode name as a string."
             ;; (type-of (thing-at-point 'symbol))
             ;; (message (type-of symbol-str))
 
-            ;; O wow.
+            ;; Find matching symbols.
             (sidekick--update-project-matches
                 symbol-str
                 buffer-fn
@@ -753,7 +745,7 @@ MODE-STR The mode name as a string."
             (sidekick--update-footer)
             (goto-char (point-min))
             (sidekick-mode)
-            ;; (highlight-regexp (regexp-quote symbol-str) 'highlight)
+            (highlight-regexp (regexp-quote symbol-str) 'match)
             ))
 
     ;; If we're not inside the Sidekick window, and take focus is non-nil,
@@ -795,7 +787,7 @@ MODE-STR The mode name as a string."
         (not sidekick--state-updating)
         (> (string-width symbol) (if (< sidekick-search-minimum-symbol-length 2) 2
                                      sidekick-search-minimum-symbol-length))
-        (sidekick--has-mode-file-associations mode-str)))
+        (length> (cdr (assoc mode-str sidekick--mode-file-associations)) 1)))
 
 (defun sidekick--trigger-update(symbol buffer-fn mode-str)
     "Triggers the Sidekick update procedure.
@@ -824,23 +816,10 @@ MODE-STR The mode name as a string."
             (select-window sidekick-window)
             (message "Sidekick: window not visible."))))
 
-(defun sidekick-focus-toggle()
-    "Toggle between the sidekick window and previous buffer's window."
-    (interactive)
-    (if (string= (buffer-name) sidekick--buffer-name)
-        (if sidekick--state-previous-buffer-window
-            (select-window sidekick--state-previous-buffer-window)
-            (other-window 0))
-        (progn
-            (setq sidekick--state-previous-buffer-window
-                (get-buffer-window (buffer-name)))
-            (sidekick-focus))))
-
 (defun sidekick-at-point()
     "Takes the symbol at point and triggers a Sidekick update."
     (interactive)
     (sidekick--trigger-update
-        ;; Just testing.
         (thing-at-point 'symbol)
         (buffer-file-name)
         (symbol-name major-mode)))
